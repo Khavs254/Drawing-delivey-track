@@ -46,6 +46,13 @@ header.topbar{position:sticky;top:0;z-index:50;background:var(--panel);border-bo
 .stat .v{font-size:18px;font-weight:700;color:var(--gold);}
 .stat .l{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
 
+/* Filter bar */
+.filter-bar{background:var(--panel);border-bottom:1px solid var(--line);padding:8px 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.filter-bar label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin:0;display:inline;}
+.filter-bar select,.filter-bar input{background:#1a1a1a;border:1px solid var(--line2);color:var(--gold);padding:5px 8px;border-radius:5px;font-size:12px;}
+.filter-bar select{min-width:150px;}
+.filter-bar input{width:160px;}
+
 nav.tabs{display:flex;gap:2px;background:var(--panel);border-bottom:1px solid var(--line);padding:0 18px;overflow-x:auto;}
 nav.tabs button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:10px 16px;font-size:12.5px;cursor:pointer;white-space:nowrap;font-weight:600;letter-spacing:.3px;}
 nav.tabs button:hover{color:var(--gold);}
@@ -129,7 +136,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 .delivery-item:last-child{border-bottom:none;}
 
 /* OCR result review */
-.ocr-row{display:grid;grid-template-columns:30px 1fr 1fr 80px 100px 1.2fr;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid #1a1a1a;font-size:12px;}
+.ocr-row{display:grid;grid-template-columns:30px 1fr 1fr 80px 1fr 100px 1.2fr;gap:8px;align-items:center;padding:6px 4px;border-bottom:1px solid #1a1a1a;font-size:12px;}
 .ocr-head{font-weight:700;color:var(--muted);font-size:10px;text-transform:uppercase;}
 
 /* Issue record card */
@@ -160,6 +167,45 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 
 /* Sticky clash header */
 .clash-sticky{position:sticky;top:0;background:var(--bg);z-index:10;padding:8px 0;border-bottom:2px solid var(--line);margin-bottom:8px;}
+
+/* Mark breakdown expand/collapse */
+.mark-breakdown-row{display:none;background:#0f1923;}
+.mark-breakdown-row.show{display:table-row;}
+.mark-breakdown-cell{padding:0 !important;border-bottom:2px solid var(--line) !important;}
+.mark-breakdown-inner{padding:8px 12px 12px 40px;}
+.mark-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:4px;}
+.mark-table th{background:#1a2636;color:var(--muted);font-size:10px;padding:4px 6px;text-align:left;border-bottom:1px solid var(--line2);}
+.mark-table td{padding:3px 6px;border-bottom:1px solid #1a2330;}
+.mark-table tr:hover td{background:#152030;}
+.expand-btn{background:transparent;border:none;color:var(--gold);cursor:pointer;font-size:14px;padding:2px 6px;transition:.15s;}
+.expand-btn:hover{color:var(--gold-bright);}
+.expand-btn.expanded{transform:rotate(90deg);}
+.mark-badge{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap;}
+.mark-badge.ga{background:rgba(88,166,255,.12);color:var(--blue);border:1px solid rgba(88,166,255,.25);}
+.mark-badge.issued{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.25);}
+.mark-badge.delivered{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25);}
+.mark-summary{font-size:11px;color:var(--muted);margin-top:2px;}
+.mark-summary .count{display:inline-block;margin-right:10px;}
+
+/* Project info in subbar */
+.subbar .proj-info{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+.subbar .proj-detail{font-size:11px;color:var(--muted);}
+.subbar .proj-detail b{color:var(--text);}
+
+/* Mark status grid in clash check */
+.mark-status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(55px,1fr));gap:3px;margin-top:6px;}
+.mark-status-cell{text-align:center;padding:3px 2px;border-radius:4px;font-size:10px;font-weight:600;border:1px solid var(--line);}
+.mark-status-cell.delivered{background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3);}
+.mark-status-cell.issued{background:rgba(210,153,34,.15);color:var(--amber);border-color:rgba(210,153,34,.3);}
+.mark-status-cell.ga{background:rgba(88,166,255,.08);color:var(--blue);border-color:rgba(88,166,255,.2);}
+.mark-status-section{margin-bottom:10px;}
+.mark-status-section h5{margin:0 0 4px;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;}
+
+/* Issue marks selector */
+.marks-selector{max-height:120px;overflow-y:auto;border:1px solid var(--line2);border-radius:5px;padding:6px;background:#1a1a1a;}
+.mark-chk{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:11px;cursor:pointer;}
+.mark-chk:hover{background:#222;}
+.mark-chk input{width:auto;margin:0;}
 </style>
 </head>
 <body>
@@ -168,6 +214,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
   <div class="brand">📐 <div>ROPA QUANTITY TRACKER<small>GA → Workshop → Site Delivery Clash Control</small></div></div>
   <div class="spacer"></div>
   <button class="btn" onclick="openProjectsModal()">📁 Projects</button>
+  <button class="btn" onclick="openProjectInfoModal()">📝 Edit Project</button>
   <button class="btn" onclick="saveProject()">☁ Save</button>
   <button class="btn" onclick="exportExcel()">⬇ Export XLSX</button>
   <button class="btn" onclick="openPrintModal()">🖨 Print Reports</button>
@@ -175,13 +222,33 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 </header>
 
 <div class="subbar no-print">
-  <span class="pname" id="hdrProjectName">Untitled Project</span>
+  <div class="proj-info">
+    <span class="pname" id="hdrProjectName">Untitled Project</span>
+    <span class="proj-detail" id="hdrProjectNumber" style="display:none;">Proj: <b>—</b></span>
+    <span class="proj-detail" id="hdrProjectClient" style="display:none;">Client: <b>—</b></span>
+    <span class="proj-detail" id="hdrProjectSite" style="display:none;">Site: <b>—</b></span>
+  </div>
   <span class="pill mono" id="hdrSyncState">not synced</span>
   <div class="spacer"></div>
   <div class="stat"><div class="v" id="statGAItems">0</div><div class="l">GA Items</div></div>
   <div class="stat"><div class="v" id="statIssues">0</div><div class="l">Issues Made</div></div>
   <div class="stat"><div class="v" id="statDeliveries">0</div><div class="l">Deliveries</div></div>
   <div class="stat"><div class="v" id="statClashes" style="color:var(--green);">0</div><div class="l">Clashes</div></div>
+</div>
+
+<!-- NEW: Filter bar -->
+<div class="filter-bar no-print">
+  <label>Filter:</label>
+  <select id="filterCategory" style="width:auto;" onchange="updateFilters()">
+    <option value="">All Categories</option>
+  </select>
+  <select id="filterSection" style="width:auto;" onchange="updateFilters()">
+    <option value="">All Sections / Profiles</option>
+  </select>
+  <input type="text" id="filterSearch" placeholder="Search description…" oninput="updateFilters()">
+  <div class="spacer"></div>
+  <div id="filterTotals" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
+  <button class="btn small" onclick="clearFilters()">Clear</button>
 </div>
 
 <nav class="tabs no-print">
@@ -220,6 +287,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
           <th style="min-width:70px;">Elevation Qty</th>
           <th style="min-width:70px;">3D Qty</th>
           <th>Drawing Ref</th>
+          <th>Marks</th>
           <th>Notes</th>
           <th style="width:26px;"></th>
         </tr></thead>
@@ -248,6 +316,24 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div id="gaCrossCheck" style="margin-top:14px;"></div>
   </div>
 
+  <div class="card">
+    <h3>Alternative Import — Paste Text / Excel / Direct PDF Text</h3>
+    <p class="hint" style="margin-top:-8px;margin-bottom:12px;">
+      Skip AI vision entirely. Paste text (e.g. copied from a PDF, a spreadsheet, or output you already extracted with an AI tool elsewhere for accuracy), import an Excel/CSV file, or pull a PDF's real text layer directly — no image is sent anywhere.
+      <b>Quick Parse</b> is pure pattern-matching: free, instant, no API call. <b>Parse with AI</b> sends this text (not an image) to your configured provider for smarter interpretation of messy/unstructured text.
+    </p>
+    <textarea id="gaPasteText" rows="6" style="width:100%;font-family:monospace;font-size:12px;" placeholder="Paste table or text here, e.g.&#10;Description&#9;Section&#9;Qty&#9;Marks&#10;Purlin&#9;CFLZ150x50x20x2.0&#9;80&#9;VBR1-VBR80"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+      <button class="btn" onclick="document.getElementById('gaPdfDirectInput').click()">📄 Read PDF text directly (no AI)</button>
+      <input type="file" id="gaPdfDirectInput" accept="application/pdf" style="display:none" onchange="handleGaPdfDirect(event)">
+      <button class="btn" onclick="document.getElementById('gaExcelInput').click()">📊 Import Excel/CSV</button>
+      <input type="file" id="gaExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleGaExcelImport(event)">
+      <div class="spacer"></div>
+      <button class="btn" onclick="gaQuickParse()">⚡ Quick Parse (no AI)</button>
+      <button class="btn solid" onclick="gaParseWithAI()">🤖 Parse with AI</button>
+    </div>
+  </div>
+
   <!-- GA Drawing Review Card -->
   <div class="card" id="gaReviewCard" style="display:none;">
     <div class="toolbar">
@@ -258,7 +344,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
       <button class="btn solid" onclick="confirmGAReviewItems()">Add Selected to GA Schedule</button>
     </div>
     <div class="ocr-row ocr-head">
-      <div></div><div>Description</div><div>Section</div><div>Qty</div><div>Confidence</div><div>Notes</div>
+      <div></div><div>Description</div><div>Section</div><div>Qty</div><div>Marks</div><div>Confidence</div><div>Notes</div>
     </div>
     <div id="gaReviewBody"></div>
   </div>
@@ -280,6 +366,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="toolbar">
       <h3 style="border:none;margin:0;">Issue Records — Sent to Workshop</h3>
       <div class="spacer"></div>
+      <button class="btn" onclick="rematchIssueItems()" title="Re-run GA matching on every currently-unlinked issued item using the GA schedule as it stands now">🔗 Re-match unlinked items to GA</button>
       <button class="btn solid" onclick="openIssueModal()">+ New Issue Record</button>
     </div>
     <p class="hint" style="margin-top:-8px;margin-bottom:12px;">
@@ -320,6 +407,24 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div id="dnExtractStatus" style="margin-top:14px;"></div>
   </div>
 
+  <div class="card">
+    <h3>Alternative Import — Paste Text / Excel / Direct PDF Text</h3>
+    <p class="hint" style="margin-top:-8px;margin-bottom:12px;">
+      Skip AI vision entirely. Paste text (e.g. copied from a PDF, a spreadsheet, or output you already extracted with an AI tool elsewhere for accuracy), import an Excel/CSV file, or pull a PDF's real text layer directly — no image is sent anywhere.
+      <b>Quick Parse</b> is pure pattern-matching: free, instant, no API call. <b>Parse with AI</b> sends this text (not an image) to your configured provider for smarter interpretation of messy/unstructured text.
+    </p>
+    <textarea id="dnPasteText" rows="6" style="width:100%;font-family:monospace;font-size:12px;" placeholder="Paste table or text here, e.g.&#10;Description&#9;Qty&#9;Marks&#10;Purlin&#9;27&#9;VBR28"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+      <button class="btn" onclick="document.getElementById('dnPdfDirectInput').click()">📄 Read PDF text directly (no AI)</button>
+      <input type="file" id="dnPdfDirectInput" accept="application/pdf" style="display:none" onchange="handleDnPdfDirect(event)">
+      <button class="btn" onclick="document.getElementById('dnExcelInput').click()">📊 Import Excel/CSV</button>
+      <input type="file" id="dnExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleDnExcelImport(event)">
+      <div class="spacer"></div>
+      <button class="btn" onclick="dnQuickParse()">⚡ Quick Parse (no AI)</button>
+      <button class="btn solid" onclick="dnParseWithAI()">🤖 Parse with AI</button>
+    </div>
+  </div>
+
   <!-- OCR Review Card -->
   <div class="card" id="dnReviewCard" style="display:none;">
     <div class="toolbar">
@@ -330,14 +435,18 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
       <button class="btn solid" onclick="saveDeliveryNote()">Save Delivery Record</button>
     </div>
     <div class="ocr-row ocr-head">
-      <div></div><div>Description (correct if needed)</div><div>Link to GA Item</div><div>Qty</div><div>Confidence</div><div>Notes</div>
+      <div></div><div>Description (correct if needed)</div><div>Link to GA Item</div><div>Qty</div><div>Marks</div><div>Confidence</div><div>Notes</div>
     </div>
     <div id="dnReviewBody"></div>
   </div>
 
   <!-- Saved Delivery Notes -->
   <div class="card">
-    <h3>Saved Delivery Notes</h3>
+    <div class="toolbar">
+      <h3 style="border:none;margin:0;">Saved Delivery Notes</h3>
+      <div class="spacer"></div>
+      <button class="btn" onclick="rematchDeliveryItems()" title="Re-run GA matching on every currently-unlinked delivery item using the GA schedule as it stands now">🔗 Re-match unlinked items to GA</button>
+    </div>
     <div id="deliveryNotesList"></div>
     <div class="empty" id="deliveryNotesEmpty" style="display:none;">
       <div class="big">🚚</div>
@@ -377,8 +486,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="table-wrap" style="margin-top:12px;">
       <table>
         <thead><tr>
-          <th>Description</th>
-          <th>Section</th>
+          <th>Description / Section</th>
           <th style="text-align:center;">GA Qty</th>
           <th style="text-align:center;">Issued</th>
           <th style="text-align:center;">Delivered</th>
@@ -420,6 +528,21 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div id="issueApiKeyWarning" class="hint" style="display:none;color:var(--amber);margin-top:8px;"></div>
     <div id="issueExtractStatus" style="margin:10px 0;"></div>
     <div id="issueCrossCheck" style="margin:10px 0;"></div>
+
+    <div class="section-title">Alternative Import — Paste Text / Excel / Direct PDF Text</div>
+    <p class="hint" style="margin-top:-6px;margin-bottom:8px;">
+      Skip AI vision entirely. Paste text, import an Excel/CSV file, or pull a PDF's real text layer directly — no image is sent anywhere. Quick Parse is free/instant pattern-matching; Parse with AI sends this text to your configured provider.
+    </p>
+    <textarea id="issuePasteText" rows="5" style="width:100%;font-family:monospace;font-size:12px;" placeholder="Paste table or text here, e.g.&#10;Description&#9;Section&#9;Qty&#9;Marks&#10;Purlin&#9;CFLZ150x50x20x2.0&#9;80&#9;VBR1-VBR80"></textarea>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;align-items:center;">
+      <button class="btn" onclick="document.getElementById('issuePdfDirectInput').click()">📄 Read PDF text directly (no AI)</button>
+      <input type="file" id="issuePdfDirectInput" accept="application/pdf" style="display:none" onchange="handleIssuePdfDirect(event)">
+      <button class="btn" onclick="document.getElementById('issueExcelInput').click()">📊 Import Excel/CSV</button>
+      <input type="file" id="issueExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="handleIssueExcelImport(event)">
+      <div class="spacer"></div>
+      <button class="btn" onclick="issueQuickParse()">⚡ Quick Parse (no AI)</button>
+      <button class="btn solid" onclick="issueParseWithAI()">🤖 Parse with AI</button>
+    </div>
 
     <div class="section-title">Items to Issue (link to GA items)</div>
     <div id="issueItemsContainer"></div>
@@ -475,11 +598,12 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
         <option value="gemini">Gemini (Google)</option>
         <option value="kimi">Kimi (Moonshot)</option>
         <option value="cerebras">Cerebras (Gemma 4)</option>
-        <option value="deepseek">DeepSeek V3 (GitHub Models) — text only</option>
+        <option value="deepseek">DeepSeek V3 (via GitHub Models) — text only</option>
+        <option value="deepseek-native">DeepSeek V3 (Official API) — text only</option>
         <option value="github-llama">Llama 3.3 70B (GitHub Models) — text only</option>
       </select>
     </div>
-    <div class="hint" style="margin-bottom:10px;">Used for all three AI uploads: GA / Part Drawing extraction, Workshop Issue drawing extraction, and Delivery Note OCR. Note: the two GitHub Models options (DeepSeek, Llama) are text-only — they only work for the AI Clash Check; the three upload features will show an error asking you to pick a different provider.</div>
+    <div class="hint" style="margin-bottom:10px;">Used for all three AI uploads: GA / Part Drawing extraction, Workshop Issue drawing extraction, and Delivery Note OCR. Note: the GitHub Models and official DeepSeek options are text-only — they only work for the AI Clash Check; the three upload features will show an error asking you to pick a different provider.</div>
     <div class="field"><label>Anthropic API Key</label><input id="cfgAnthropicKey" placeholder="sk-ant-..." type="password"></div>
     <div class="hint">Stored only in browser localStorage — sent directly to api.anthropic.com. Get a key at <a href="https://console.anthropic.com/settings/keys" target="_blank">console.anthropic.com</a>.</div>
     <div class="field" style="margin-top:8px;"><label>Gemini API Key</label><input id="cfgGeminiKey" placeholder="AIza..." type="password"></div>
@@ -490,6 +614,8 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="hint">Stored only in browser localStorage — sent directly to api.cerebras.ai. Vision uploads use Gemma 4 31B, currently a public-preview multimodal model on Cerebras — accuracy and availability may be less stable than the other providers, and free-tier accounts have fairly tight rate limits. Get a key at <a href="https://cloud.cerebras.ai" target="_blank">cloud.cerebras.ai</a>.</div>
     <div class="field" style="margin-top:8px;"><label>GitHub Token (GitHub Models — DeepSeek / Llama)</label><input id="cfgGithubKey" placeholder="github_pat_..." type="password"></div>
     <div class="hint">Stored only in browser localStorage — sent directly to models.github.ai. One token powers both the DeepSeek and Llama options above. Needs a fine-grained personal access token with "Models: read" permission. Text-only — used for the AI Clash Check, not image/PDF uploads. Get a token at <a href="https://github.com/settings/tokens" target="_blank">github.com/settings/tokens</a>. Heads up: GitHub Models is scheduled for full retirement on 30 July 2026, so treat this as short-term.</div>
+    <div class="field" style="margin-top:8px;"><label>DeepSeek API Key (Official)</label><input id="cfgDeepseekKey" placeholder="sk-..." type="password"></div>
+    <div class="hint">Stored only in browser localStorage — sent directly to api.deepseek.com using the deepseek-v4-flash model. Text-only for now — image/PDF support in DeepSeek's API is unconfirmed as of mid-2026, so this stays blocked for uploads until that's verified; used for the AI Clash Check. Not affected by the GitHub Models retirement. Get a key at <a href="https://platform.deepseek.com/api_keys" target="_blank">platform.deepseek.com/api_keys</a>.</div>
 
     <div class="section-title" style="margin-top:14px;">Multi-Model Comparison</div>
     <div class="print-opt"><input type="checkbox" id="cfgCompareMode" onchange="document.getElementById('cfgCompareProvidersWrap').style.display=this.checked?'block':'none';"><span>Run multiple models in parallel on each upload and compare results before accepting</span></div>
@@ -527,6 +653,24 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
   </div>
 </div>
 
+
+<!-- ===================== PROJECT INFO MODAL ===================== -->
+<div class="modal-bg no-print" id="projectInfoModal">
+  <div class="modal" style="max-width:500px;">
+    <button class="modal-close" onclick="closeModal('projectInfoModal')">&times;</button>
+    <h3>Project Information</h3>
+    <div class="grid cols-2">
+      <div class="field"><label>Project Name</label><input id="projName" placeholder="e.g. Paddy Elevator Tower"></div>
+      <div class="field"><label>Project Number</label><input id="projNumber" placeholder="e.g. DRG PR***"></div>
+      <div class="field"><label>Client</label><input id="projClient" placeholder="e.g. ABC Client Ltd"></div>
+      <div class="field"><label>Site Location</label><input id="projSite" placeholder="e.g. Nairobi, Kenya"></div>
+    </div>
+    <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+      <button class="btn" onclick="closeModal('projectInfoModal')">Cancel</button>
+      <button class="btn solid" onclick="saveProjectInfo()">Save Project Info</button>
+    </div>
+  </div>
+</div>
 <!-- ===================== PROJECTS MODAL ===================== -->
 <div class="modal-bg no-print" id="projectsModal">
   <div class="modal">
@@ -558,7 +702,7 @@ const DEFAULT_SUPA_URL = "https://xschfdgrlbgcouqaepsp.supabase.co";
 const DEFAULT_SUPA_KEY = "sb_publishable_4aeaSsBVJU8f_F_0H0GpGg_2-CQU-bC";
 const LS_KEYS = { 
   supaUrl:"rqt_supa_url", supaKey:"rqt_supa_key", anthropicKey:"rqt_anthropic_key",
-  geminiKey:"rqt_gemini_key", kimiKey:"rqt_kimi_key", cerebrasKey:"rqt_cerebras_key", githubKey:"rqt_github_key", aiProvider:"rqt_ai_provider",
+  geminiKey:"rqt_gemini_key", kimiKey:"rqt_kimi_key", cerebrasKey:"rqt_cerebras_key", githubKey:"rqt_github_key", deepseekKey:"rqt_deepseek_key", aiProvider:"rqt_ai_provider",
   compareMode:"rqt_compare_mode", compareProviders:"rqt_compare_providers",
   project:"rqt_project_data"
 };
@@ -574,6 +718,7 @@ function hasProviderKey(provider){
   if(provider === "kimi") return !!getCfg(LS_KEYS.kimiKey,"");
   if(provider === "cerebras") return !!getCfg(LS_KEYS.cerebrasKey,"");
   if(provider === "deepseek") return !!getCfg(LS_KEYS.githubKey,"");
+  if(provider === "deepseek-native") return !!getCfg(LS_KEYS.deepseekKey,"");
   if(provider === "github-llama") return !!getCfg(LS_KEYS.githubKey,"");
   return !!getCfg(LS_KEYS.anthropicKey,"");
 }
@@ -583,6 +728,7 @@ function providerLabel(provider){
   if(provider === "kimi") return "Kimi";
   if(provider === "cerebras") return "Cerebras";
   if(provider === "deepseek") return "DeepSeek (GitHub Models)";
+  if(provider === "deepseek-native") return "DeepSeek (Official API)";
   if(provider === "github-llama") return "Llama 3.3 70B (GitHub Models)";
   return "Claude";
 }
@@ -627,9 +773,9 @@ const UNIT_OPTIONS = ["No.","m","m²","kg","ton"];
 let state = {
   id: null,
   project: { name:"Untitled Project", client:"", projectNumber:"", siteLocation:"", updated_at: null },
-  gaItems: [],       // {id, description, section, category, unit, gaQty, planQty, elevationQty, threeDQty, drawingRef, notes}
-  workshopIssues: [], // {id, issueDate, issueRef, issuedBy, items:[{gaItemId, description, section, qtyIssued, notes}]}
-  deliveryNotes: [],  // {id, deliveryDate, vehicleRef, driverName, imageData, items:[{description, gaItemId, qtyDelivered, confidence, notes}]}
+  gaItems: [],       // {id, description, section, category, unit, gaQty, planQty, elevationQty, threeDQty, drawingRef, marks, notes, markBreakdown:[{mark, qty, length, material, weight, status}]}
+  workshopIssues: [], // {id, issueDate, issueRef, issuedBy, items:[{gaItemId, description, section, qtyIssued, marks, markList:[], notes}]}
+  deliveryNotes: [],  // {id, deliveryDate, vehicleRef, driverName, imageData, items:[{description, gaItemId, qtyDelivered, marks, markList:[], confidence, notes}]}
 };
 let dnReviewItems = []; // OCR review items before saving
 let issueEditItems = []; // Items being composed in issue modal
@@ -637,10 +783,164 @@ let issueEditItems = []; // Items being composed in issue modal
 function uid(){ return 'x_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
 
 function blankGAItem(){
-  return { id: uid(), description:"", section:"", category:"secondary_members", unit:"No.", gaQty:0, planQty:0, elevationQty:0, threeDQty:0, drawingRef:"", notes:"" };
+  return { id: uid(), description:"", section:"", category:"secondary_members", unit:"No.", gaQty:0, planQty:0, elevationQty:0, threeDQty:0, drawingRef:"", marks:"", notes:"", markBreakdown:[] };
 }
 function blankDeliveryNote(){
   return { id: uid(), deliveryDate:"", vehicleRef:"", driverName:"", imageData:"", items:[] };
+}
+
+/* ============================================================
+   FILTER STATE
+   ============================================================ */
+let activeFilters = {
+  categories: [],
+  sections: [],
+  search: ''
+};
+
+function getAllSections(){
+  const sections = new Set();
+  state.gaItems.forEach(it => { if(it.section) sections.add(it.section); });
+  state.workshopIssues.forEach(iss => {
+    iss.items.forEach(it => { if(it.section) sections.add(it.section); });
+  });
+  state.deliveryNotes.forEach(dn => {
+    dn.items.forEach(it => { if(it.section) sections.add(it.section); });
+  });
+  return Array.from(sections).sort();
+}
+
+function initFilters(){
+  const catSel = document.getElementById('filterCategory');
+  const secSel = document.getElementById('filterSection');
+  if(!catSel || !secSel) return;
+  
+  const savedCat = catSel.value;
+  const savedSec = secSel.value;
+  
+  catSel.innerHTML = '<option value="">All Categories</option>';
+  CATEGORY_OPTIONS.forEach(([v,l]) => {
+    catSel.innerHTML += `<option value="${v}">${l}</option>`;
+  });
+  
+  secSel.innerHTML = '<option value="">All Sections / Profiles</option>';
+  getAllSections().forEach(s => {
+    secSel.innerHTML += `<option value="${esc(s)}">${esc(s)}</option>`;
+  });
+  
+  catSel.value = savedCat || '';
+  secSel.value = savedSec || '';
+}
+
+function updateFilters(){
+  activeFilters.categories = [];
+  activeFilters.sections = [];
+  activeFilters.search = '';
+  
+  const catSel = document.getElementById('filterCategory');
+  const secSel = document.getElementById('filterSection');
+  const searchInp = document.getElementById('filterSearch');
+  
+  if(catSel && catSel.value) activeFilters.categories = [catSel.value];
+  if(secSel && secSel.value) activeFilters.sections = [secSel.value];
+  if(searchInp) activeFilters.search = searchInp.value.trim().toLowerCase();
+  
+  renderAll();
+  renderFilterTotals();
+}
+
+function clearFilters(){
+  const catSel = document.getElementById('filterCategory');
+  const secSel = document.getElementById('filterSection');
+  const searchInp = document.getElementById('filterSearch');
+  if(catSel) catSel.value = '';
+  if(secSel) secSel.value = '';
+  if(searchInp) searchInp.value = '';
+  activeFilters = { categories: [], sections: [], search: '' };
+  renderAll();
+  renderFilterTotals();
+}
+
+function itemMatchesFilters(item, type='ga'){
+  const search = activeFilters.search;
+  const cats = activeFilters.categories;
+  const secs = activeFilters.sections;
+  
+  if(cats.length === 0 && secs.length === 0 && !search) return true;
+  
+  let description = '', section = '', category = '';
+  
+  if(type === 'ga') {
+    description = item.description || '';
+    section = item.section || '';
+    category = item.category || '';
+  } else if(type === 'issue' || type === 'delivery') {
+    description = item.description || '';
+    section = item.section || '';
+    if(item.gaItemId) {
+      const ga = state.gaItems.find(g => g.id === item.gaItemId);
+      if(ga) category = ga.category || '';
+    }
+  } else if(type === 'clash') {
+    description = item.gaItem ? item.gaItem.description : (item.description || '');
+    section = item.gaItem ? item.gaItem.section : (item.section || '');
+    category = item.gaItem ? item.gaItem.category : '';
+  }
+  
+  if(cats.length > 0 && !cats.includes(category)) return false;
+  if(secs.length > 0 && !secs.includes(section)) return false;
+  if(search && !description.toLowerCase().includes(search) && !section.toLowerCase().includes(search)) return false;
+  
+  return true;
+}
+
+function renderFilterTotals(){
+  const el = document.getElementById('filterTotals');
+  if(!el) return;
+  
+  if(activeFilters.categories.length === 0 && activeFilters.sections.length === 0 && !activeFilters.search) {
+    el.innerHTML = '';
+    return;
+  }
+  
+  const totals = computeFilteredTotals();
+  el.innerHTML = `
+    <span class="pill" style="background:var(--gold-dim);color:var(--gold);border-color:var(--gold);">GA: <b>${totals.gaQty}</b></span>
+    <span class="pill" style="background:rgba(88,166,255,.15);color:var(--blue);border-color:rgba(88,166,255,.3);">Issued: <b>${totals.issuedQty}</b></span>
+    <span class="pill" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3);">Delivered: <b>${totals.deliveredQty}</b></span>
+    <span class="pill" style="background:rgba(248,81,73,.15);color:var(--red);border-color:rgba(248,81,73,.3);">Unlinked: <b>${totals.unlinkedQty}</b></span>
+    <span class="pill" style="background:rgba(188,140,255,.15);color:var(--purple);border-color:rgba(188,140,255,.3);">Net Diff: <b>${totals.netDiff > 0 ? '+' : ''}${totals.netDiff}</b></span>
+  `;
+}
+
+function computeFilteredTotals(){
+  let gaQty = 0, issuedQty = 0, deliveredQty = 0, unlinkedQty = 0;
+  
+  state.gaItems.forEach(it => {
+    if(itemMatchesFilters(it, 'ga')) gaQty += Number(it.gaQty) || 0;
+  });
+  
+  state.workshopIssues.forEach(iss => {
+    iss.items.forEach(it => {
+      if(itemMatchesFilters(it, 'issue')) {
+        issuedQty += Number(it.qtyIssued) || 0;
+        if(!it.gaItemId) unlinkedQty += Number(it.qtyIssued) || 0;
+      }
+    });
+  });
+  
+  state.deliveryNotes.forEach(dn => {
+    dn.items.forEach(it => {
+      if(itemMatchesFilters(it, 'delivery')) {
+        deliveredQty += Number(it.qtyDelivered) || 0;
+        if(!it.gaItemId) unlinkedQty += Number(it.qtyDelivered) || 0;
+      }
+    });
+  });
+  
+  const netDiff = issuedQty - gaQty;
+  
+  return { gaQty, issuedQty, deliveredQty, unlinkedQty, netDiff };
 }
 
 /* ============================================================
@@ -655,7 +955,6 @@ function loadLocal(){
     try{
       const parsed = JSON.parse(raw);
       state = { ...state, ...parsed };
-      // Ensure arrays exist
       if(!state.gaItems) state.gaItems = [];
       if(!state.workshopIssues) state.workshopIssues = [];
       if(!state.deliveryNotes) state.deliveryNotes = [];
@@ -668,11 +967,16 @@ function loadLocal(){
    ============================================================ */
 function renderHeader(){
   document.getElementById('hdrProjectName').textContent = state.project.name || "Untitled Project";
+  const numEl = document.getElementById('hdrProjectNumber');
+  const clientEl = document.getElementById('hdrProjectClient');
+  const siteEl = document.getElementById('hdrProjectSite');
+  if(numEl){ numEl.style.display = state.project.projectNumber ? 'inline' : 'none'; numEl.querySelector('b').textContent = state.project.projectNumber || '—'; }
+  if(clientEl){ clientEl.style.display = state.project.client ? 'inline' : 'none'; clientEl.querySelector('b').textContent = state.project.client || '—'; }
+  if(siteEl){ siteEl.style.display = state.project.siteLocation ? 'inline' : 'none'; siteEl.querySelector('b').textContent = state.project.siteLocation || '—'; }
   document.getElementById('statGAItems').textContent = state.gaItems.length;
   document.getElementById('statIssues').textContent = state.workshopIssues.length;
   const totalDeliveries = state.deliveryNotes.length;
   document.getElementById('statDeliveries').textContent = totalDeliveries;
-  // Calculate clash count
   const clashes = computeClashes();
   const clashCount = clashes.filter(c => c.issueClash || c.deliveryClash).length;
   const clashEl = document.getElementById('statClashes');
@@ -680,6 +984,28 @@ function renderHeader(){
   clashEl.style.color = clashCount > 0 ? 'var(--red)' : 'var(--green)';
 }
 
+
+
+/* ============================================================
+   PROJECT INFO MODAL
+   ============================================================ */
+function openProjectInfoModal(){
+  document.getElementById('projName').value = state.project.name || '';
+  document.getElementById('projNumber').value = state.project.projectNumber || '';
+  document.getElementById('projClient').value = state.project.client || '';
+  document.getElementById('projSite').value = state.project.siteLocation || '';
+  document.getElementById('projectInfoModal').classList.add('show');
+}
+function saveProjectInfo(){
+  state.project.name = document.getElementById('projName').value.trim() || 'Untitled Project';
+  state.project.projectNumber = document.getElementById('projNumber').value.trim();
+  state.project.client = document.getElementById('projClient').value.trim();
+  state.project.siteLocation = document.getElementById('projSite').value.trim();
+  closeModal('projectInfoModal');
+  renderHeader();
+  saveLocal();
+  toast('Project information saved.');
+}
 /* ============================================================
    TAB SWITCHING
    ============================================================ */
@@ -698,9 +1024,23 @@ function switchTab(tab){
 function renderGA(){
   const body = document.getElementById('gaBody');
   const empty = document.getElementById('gaEmpty');
-  if(state.gaItems.length===0){ empty.style.display='block'; body.innerHTML=''; return; }
+  const filtered = state.gaItems.filter(it => itemMatchesFilters(it, 'ga'));
+  
+  if(filtered.length===0){ 
+    empty.style.display='block'; 
+    empty.innerHTML = state.gaItems.length === 0 
+      ? '<div class="big">📐</div>No GA items yet. Add items manually or import from the Members list.'
+      : '<div class="big">🔍</div>No GA items match the current filter.';
+    body.innerHTML=''; 
+    return; 
+  }
   empty.style.display='none';
-  body.innerHTML = state.gaItems.map((it,i)=>`
+  body.innerHTML = filtered.map((it,i)=>{
+    const hasMarks = it.markBreakdown && it.markBreakdown.length > 0;
+    const deliveredCount = hasMarks ? it.markBreakdown.filter(m=>m.status==='delivered').length : 0;
+    const issuedCount = hasMarks ? it.markBreakdown.filter(m=>m.status==='issued').length : 0;
+    const markSummary = hasMarks ? `<div class="mark-summary"><span class="count">${it.markBreakdown.length} marks</span>${deliveredCount>0?`<span class="count" style="color:var(--green)">${deliveredCount} delivered</span>`:''}${issuedCount>0?`<span class="count" style="color:var(--amber)">${issuedCount} issued</span>`:''}</div>` : '';
+    return `
     <tr class="ga-row">
       <td class="mono" style="color:var(--muted2);">${i+1}</td>
       <td><input value="${esc(it.description)}" onchange="updGA('${it.id}','description',this.value)" style="min-width:140px;" placeholder="e.g. Purlin"></td>
@@ -716,21 +1056,74 @@ function renderGA(){
       <td><input type="number" min="0" value="${it.elevationQty}" onchange="updGA('${it.id}','elevationQty',Number(this.value))" style="width:60px;"></td>
       <td><input type="number" min="0" value="${it.threeDQty}" onchange="updGA('${it.id}','threeDQty',Number(this.value))" style="width:60px;"></td>
       <td><input value="${esc(it.drawingRef)}" onchange="updGA('${it.id}','drawingRef',this.value)" style="width:90px;" placeholder="e.g. GA-01"></td>
+      <td>
+        <input value="${esc(it.marks)}" onchange="updGA('${it.id}','marks',this.value)" style="width:110px;" placeholder="e.g. A1-A12" title="Assembly/piece mark(s) making up this quantity — carried through to Issue and Delivery for exact traceability.">
+        ${markSummary}
+      </td>
       <td><input value="${esc(it.notes)}" onchange="updGA('${it.id}','notes',this.value)" style="width:100px;" placeholder="notes"></td>
-      <td><button class="icon-btn" onclick="deleteGAItem('${it.id}')">✕</button></td>
+      <td style="white-space:nowrap;">
+        ${hasMarks?`<button class="expand-btn" id="expand-${it.id}" onclick="toggleMarkBreakdown('${it.id}')" title="Show/hide mark breakdown">▶</button>`:''}
+        <button class="icon-btn" onclick="deleteGAItem('${it.id}')">✕</button>
+      </td>
+    </tr>
+    ${hasMarks?renderMarkBreakdownRow(it):''}
+  `}).join('');
+}
+
+function renderMarkBreakdownRow(it){
+  if(!it.markBreakdown || it.markBreakdown.length===0) return '';
+  const rows = it.markBreakdown.map((m,mi)=>`
+    <tr>
+      <td class="mono" style="color:var(--muted2);">${mi+1}</td>
+      <td class="mono" style="font-weight:600;color:var(--gold);">${esc(m.mark)}</td>
+      <td>${m.qty||1}</td>
+      <td class="mono">${m.length?esc(String(m.length))+' mm':'—'}</td>
+      <td class="mono">${esc(m.material||'—')}</td>
+      <td class="mono">${m.weight?esc(String(m.weight))+' kg':'—'}</td>
+      <td><span class="mark-badge ${m.status||'ga'}">${m.status==='delivered'?'Delivered':m.status==='issued'?'Issued':'In GA'}</span></td>
+      <td><button class="icon-btn" onclick="removeMarkFromGA('${it.id}',${mi})" title="Remove this mark">✕</button></td>
     </tr>
   `).join('');
+  return `
+    <tr class="mark-breakdown-row" id="mark-row-${it.id}">
+      <td colspan="13" class="mark-breakdown-cell">
+        <div class="mark-breakdown-inner">
+          <table class="mark-table">
+            <thead><tr><th style="width:30px;">#</th><th>Mark</th><th>Qty</th><th>Length</th><th>Material</th><th>Weight</th><th>Status</th><th style="width:26px;"></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+function toggleMarkBreakdown(gaId){
+  const row = document.getElementById('mark-row-'+gaId);
+  const btn = document.getElementById('expand-'+gaId);
+  if(!row || !btn) return;
+  row.classList.toggle('show');
+  btn.classList.toggle('expanded');
+}
+
+function removeMarkFromGA(gaId, markIdx){
+  const it = state.gaItems.find(x=>x.id===gaId);
+  if(!it || !it.markBreakdown) return;
+  const removed = it.markBreakdown.splice(markIdx,1)[0];
+  it.gaQty = Math.max(0, it.gaQty - (removed.qty||1));
+  it.marks = collapseMarksToRanges(it.markBreakdown.map(m=>m.mark));
+  saveLocal(); renderGA();
 }
 
 function addGAItem(){
   state.gaItems.push(blankGAItem());
-  renderGA(); renderHeader(); saveLocal();
+  renderGA(); renderHeader(); saveLocal(); initFilters();
 }
 
 function deleteGAItem(id){
   if(!confirm('Remove this GA item?')) return;
   state.gaItems = state.gaItems.filter(it=>it.id!==id);
-  renderGA(); renderHeader(); saveLocal();
+  renderGA(); renderHeader(); saveLocal(); initFilters();
 }
 
 function updGA(id, key, val){
@@ -743,12 +1136,11 @@ function updGA(id, key, val){
 function clearGA(){
   if(!confirm('Clear all GA items? This cannot be undone.')) return;
   state.gaItems = [];
-  renderGA(); renderHeader(); saveLocal();
+  renderGA(); renderHeader(); saveLocal(); initFilters();
   toast('GA schedule cleared.');
 }
 
 function importFromMembers(){
-  // Import from a simplified member list - in real usage this would integrate with the main app
   toast('Connect to Workshop Planner members — use bulk paste below for now.');
 }
 
@@ -771,7 +1163,7 @@ function parseBulkGA(){
     }
   }
   document.getElementById('gaBulkPaste').value = '';
-  renderGA(); renderHeader(); saveLocal();
+  renderGA(); renderHeader(); saveLocal(); initFilters();
   toast(`Added ${added} GA item(s).`);
   autoFlagClashesForNewData();
 }
@@ -782,9 +1174,23 @@ function parseBulkGA(){
 function renderIssues(){
   const container = document.getElementById('issuesList');
   const empty = document.getElementById('issuesEmpty');
-  if(state.workshopIssues.length===0){ empty.style.display='block'; container.innerHTML=''; return; }
+  
+  const filteredRecords = state.workshopIssues.map(iss => {
+    const filteredItems = iss.items.filter(it => itemMatchesFilters(it, 'issue'));
+    if(filteredItems.length === 0) return null;
+    return { ...iss, items: filteredItems };
+  }).filter(Boolean);
+  
+  if(filteredRecords.length===0){ 
+    empty.style.display='block'; 
+    empty.innerHTML = state.workshopIssues.length === 0
+      ? '<div class="big">🏭</div>No issue records yet. Create one when you send items to the workshop.'
+      : '<div class="big">🔍</div>No issue items match the current filter.';
+    container.innerHTML=''; 
+    return; 
+  }
   empty.style.display='none';
-  container.innerHTML = state.workshopIssues.map(iss=>{
+  container.innerHTML = filteredRecords.map(iss=>{
     const totalQty = iss.items.reduce((s,it)=>s+(Number(it.qtyIssued)||0),0);
     return `
     <div class="issue-record">
@@ -798,11 +1204,17 @@ function renderIssues(){
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th><th>Linked GA</th></tr></thead>
+          <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th><th>Marks</th><th>Specific Marks</th><th>Linked GA</th></tr></thead>
           <tbody>
-            ${iss.items.map(it=>{
+            ${iss.items.map((it,idx)=>{
               const ga = state.gaItems.find(g=>g.id===it.gaItemId);
-              return `<tr><td>${esc(it.description)}</td><td class="mono">${esc(it.section)}</td><td>${it.qtyIssued}</td><td>${ga?esc(ga.description):'<span class="hint">unlinked</span>'}</td></tr>`;
+              const specificMarks = it.markList && it.markList.length > 0 ? it.markList.map(m=>`<span class="pill mono" style="font-size:10px;">${esc(m)}</span>`).join(' ') : '<span class="hint">—</span>';
+              return `<tr><td>${esc(it.description)}</td><td class="mono">${esc(it.section)}</td><td>${it.qtyIssued}</td><td class="mono">${esc(it.marks||'—')}</td><td>${specificMarks}</td><td>
+                <select onchange="relinkIssueItem('${iss.id}',${idx},this.value)" style="${ga?'':'color:var(--amber);'}">
+                  <option value="">-- unlinked --</option>
+                  ${state.gaItems.map(g=>`<option value="${g.id}" ${it.gaItemId===g.id?'selected':''}>${esc(g.description)} ${esc(g.section)} (GA:${g.gaQty})</option>`).join('')}
+                </select>
+              </td></tr>`;
             }).join('')}
           </tbody>
         </table>
@@ -833,9 +1245,13 @@ function renderIssueEditItems(){
   container.innerHTML = `
     <div class="table-wrap">
       <table>
-        <thead><tr><th>GA Item</th><th>Description</th><th>Section</th><th>Qty to Issue</th><th></th></tr></thead>
+        <thead><tr><th>GA Item</th><th>Description</th><th>Section</th><th>Qty to Issue</th><th>Marks</th><th>Specific Marks</th><th></th></tr></thead>
         <tbody>
-          ${issueEditItems.map((it,i)=>`
+          ${issueEditItems.map((it,i)=>{
+            const ga = it.gaItemId ? state.gaItems.find(g=>g.id===it.gaItemId) : null;
+            const hasMarks = ga && ga.markBreakdown && ga.markBreakdown.length > 0;
+            const markSelector = hasMarks ? renderMarkSelector(ga.markBreakdown, it.markList||[], i) : '<span class="hint">—</span>';
+            return `
             <tr>
               <td>
                 <select onchange="linkIssueItem(${i},this.value)" style="min-width:140px;">
@@ -846,16 +1262,45 @@ function renderIssueEditItems(){
               <td><input value="${esc(it.description)}" onchange="issueEditItems[${i}].description=this.value" style="min-width:120px;"></td>
               <td><input value="${esc(it.section)}" onchange="issueEditItems[${i}].section=this.value" style="width:90px;"></td>
               <td><input type="number" min="0" value="${it.qtyIssued}" onchange="issueEditItems[${i}].qtyIssued=Number(this.value)" style="width:60px;"></td>
+              <td><input value="${esc(it.marks||'')}" onchange="issueEditItems[${i}].marks=this.value" style="width:100px;" placeholder="e.g. A1-A12"></td>
+              <td style="min-width:120px;">${markSelector}</td>
               <td><button class="icon-btn" onclick="removeIssueItem(${i})">✕</button></td>
             </tr>
-          `).join('')}
+          `}).join('')}
         </tbody>
       </table>
     </div>`;
 }
 
+function renderMarkSelector(allMarks, selectedMarks, itemIdx){
+  const available = allMarks.filter(m=>m.status==='ga' || !m.status);
+  if(available.length===0) return '<span class="hint">All marks issued</span>';
+  return `<div class="marks-selector">
+    ${available.map(m=>`
+      <label class="mark-chk">
+        <input type="checkbox" ${selectedMarks.includes(m.mark)?'checked':''} onchange="toggleIssueMark(${itemIdx},'${m.mark}',this.checked)">
+        <span class="mono">${esc(m.mark)}</span>
+        ${m.length?`<span class="hint">${m.length}mm</span>`:''}
+      </label>
+    `).join('')}
+  </div>`;
+}
+
+function toggleIssueMark(itemIdx, mark, checked){
+  const it = issueEditItems[itemIdx];
+  if(!it.markList) it.markList = [];
+  if(checked){
+    if(!it.markList.includes(mark)) it.markList.push(mark);
+  } else {
+    it.markList = it.markList.filter(m=>m!==mark);
+  }
+  it.qtyIssued = it.markList.length;
+  it.marks = collapseMarksToRanges(it.markList);
+  renderIssueEditItems();
+}
+
 function addIssueItemRow(){
-  issueEditItems.push({ gaItemId:"", description:"", section:"", qtyIssued:0, notes:"" });
+  issueEditItems.push({ gaItemId:"", description:"", section:"", qtyIssued:0, marks:"", markList:[], notes:"" });
   renderIssueEditItems();
 }
 
@@ -872,19 +1317,35 @@ function linkIssueItem(idx, gaId){
     if(ga){
       it.description = ga.description;
       it.section = ga.section;
+      if(!it.marks) it.marks = ga.marks || "";
+      if(ga.markBreakdown && ga.markBreakdown.length > 0){
+        const availableMarks = ga.markBreakdown.filter(m=>m.status==='ga' || !m.status).map(m=>m.mark);
+        if((!it.markList || it.markList.length===0) && availableMarks.length > 0){
+          it.markList = [...availableMarks];
+          it.qtyIssued = it.markList.length;
+          it.marks = collapseMarksToRanges(it.markList);
+        }
+      }
     }
   }
   renderIssueEditItems();
 }
 
 function autoFillGAIssueItems(){
-  issueEditItems = state.gaItems.map(ga=>({
-    gaItemId: ga.id,
-    description: ga.description,
-    section: ga.section,
-    qtyIssued: ga.gaQty,
-    notes: ""
-  }));
+  issueEditItems = state.gaItems.map(ga=>{
+    const availableMarks = ga.markBreakdown && ga.markBreakdown.length > 0
+      ? ga.markBreakdown.filter(m=>m.status==='ga' || !m.status).map(m=>m.mark)
+      : [];
+    return {
+      gaItemId: ga.id,
+      description: ga.description,
+      section: ga.section,
+      qtyIssued: availableMarks.length || ga.gaQty,
+      marks: availableMarks.length > 0 ? collapseMarksToRanges(availableMarks) : (ga.marks || ""),
+      markList: availableMarks,
+      notes: ""
+    };
+  });
   renderIssueEditItems();
   toast(`Auto-filled ${issueEditItems.length} items from GA schedule.`);
 }
@@ -899,6 +1360,18 @@ function saveIssueRecord(){
   const validItems = issueEditItems.filter(it=>it.qtyIssued>0);
   if(validItems.length===0){ toast('At least one item must have qty > 0.'); return; }
 
+  validItems.forEach(it=>{
+    if(it.gaItemId && it.markList && it.markList.length > 0){
+      const ga = state.gaItems.find(g=>g.id===it.gaItemId);
+      if(ga && ga.markBreakdown){
+        it.markList.forEach(mark=>{
+          const mb = ga.markBreakdown.find(m=>m.mark===mark);
+          if(mb && (!mb.status || mb.status==='ga')) mb.status = 'issued';
+        });
+      }
+    }
+  });
+
   state.workshopIssues.push({
     id: uid(),
     issueDate: date,
@@ -907,7 +1380,7 @@ function saveIssueRecord(){
     items: validItems.map(it=>({...it}))
   });
   closeModal('issueModal');
-  renderIssues(); renderHeader(); saveLocal();
+  renderGA(); renderIssues(); renderHeader(); saveLocal(); initFilters();
   toast(`Issue record ${esc(ref)} saved with ${validItems.length} item(s).`);
   autoFlagClashesForNewData();
 }
@@ -915,7 +1388,32 @@ function saveIssueRecord(){
 function deleteIssueRecord(id){
   if(!confirm('Delete this issue record?')) return;
   state.workshopIssues = state.workshopIssues.filter(i=>i.id!==id);
-  renderIssues(); renderHeader(); saveLocal();
+  renderIssues(); renderHeader(); saveLocal(); initFilters();
+}
+
+function relinkIssueItem(issId, itemIdx, gaId){
+  const iss = state.workshopIssues.find(i=>i.id===issId);
+  if(!iss || !iss.items[itemIdx]) return;
+  iss.items[itemIdx].gaItemId = gaId || "";
+  saveLocal();
+  renderIssues();
+  autoFlagClashesForNewData();
+}
+
+function rematchIssueItems(){
+  let matched = 0, checked = 0;
+  state.workshopIssues.forEach(iss=>{
+    iss.items.forEach(it=>{
+      if(it.gaItemId) return;
+      checked++;
+      const ga = findBestGAMatch(it.description);
+      if(ga){ it.gaItemId = ga.id; matched++; }
+    });
+  });
+  saveLocal();
+  renderIssues();
+  autoFlagClashesForNewData();
+  toast(matched>0 ? `Linked ${matched} of ${checked} unlinked item(s) to GA.` : `No matches found for ${checked} unlinked item(s) — descriptions may not line up with GA. Link manually via the dropdown.`);
 }
 
 /* ============================================================
@@ -924,9 +1422,23 @@ function deleteIssueRecord(id){
 function renderDeliveryNotes(){
   const container = document.getElementById('deliveryNotesList');
   const empty = document.getElementById('deliveryNotesEmpty');
-  if(state.deliveryNotes.length===0){ empty.style.display='block'; container.innerHTML=''; return; }
+  
+  const filteredRecords = state.deliveryNotes.map(dn => {
+    const filteredItems = dn.items.filter(it => itemMatchesFilters(it, 'delivery'));
+    if(filteredItems.length === 0) return null;
+    return { ...dn, items: filteredItems };
+  }).filter(Boolean);
+  
+  if(filteredRecords.length===0){ 
+    empty.style.display='block'; 
+    empty.innerHTML = state.deliveryNotes.length === 0
+      ? '<div class="big">🚚</div>No delivery notes saved yet.'
+      : '<div class="big">🔍</div>No delivery items match the current filter.';
+    container.innerHTML=''; 
+    return; 
+  }
   empty.style.display='none';
-  container.innerHTML = state.deliveryNotes.map(dn=>{
+  container.innerHTML = filteredRecords.map(dn=>{
     const totalQty = dn.items.reduce((s,it)=>s+(Number(it.qtyDelivered)||0),0);
     return `
     <div class="issue-record">
@@ -941,14 +1453,20 @@ function renderDeliveryNotes(){
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Description</th><th>Linked GA</th><th>Qty Delivered</th><th>Confidence</th></tr></thead>
+          <thead><tr><th>Description</th><th>Linked GA</th><th>Qty Delivered</th><th>Marks</th><th>Specific Marks</th><th>Confidence</th></tr></thead>
           <tbody>
-            ${dn.items.map(it=>{
+            ${dn.items.map((it,idx)=>{
               const ga = state.gaItems.find(g=>g.id===it.gaItemId);
               const confBadge = it.confidence==='high'?'<span class="badge ok">High</span>':
                                it.confidence==='medium'?'<span class="badge warn">Med</span>':
                                '<span class="badge neutral">Low</span>';
-              return `<tr><td>${esc(it.description)}</td><td>${ga?esc(ga.description):'<span class="hint">unlinked</span>'}</td><td>${it.qtyDelivered}</td><td>${confBadge}</td></tr>`;
+              const specificMarks = it.markList && it.markList.length > 0 ? it.markList.map(m=>`<span class="pill mono" style="font-size:10px;">${esc(m)}</span>`).join(' ') : '<span class="hint">—</span>';
+              return `<tr><td>${esc(it.description)}</td><td>
+                <select onchange="relinkDeliveryItem('${dn.id}',${idx},this.value)" style="${ga?'':'color:var(--amber);'}">
+                  <option value="">-- unlinked --</option>
+                  ${state.gaItems.map(g=>`<option value="${g.id}" ${it.gaItemId===g.id?'selected':''}>${esc(g.description)} ${esc(g.section)} (GA:${g.gaQty})</option>`).join('')}
+                </select>
+              </td><td>${it.qtyDelivered}</td><td class="mono">${esc(it.marks||'—')}</td><td>${specificMarks}</td><td>${confBadge}</td></tr>`;
             }).join('')}
           </tbody>
         </table>
@@ -967,10 +1485,34 @@ function viewImage(dnId){
 function deleteDeliveryNote(id){
   if(!confirm('Delete this delivery note?')) return;
   state.deliveryNotes = state.deliveryNotes.filter(d=>d.id!==id);
-  renderDeliveryNotes(); renderHeader(); saveLocal();
+  renderDeliveryNotes(); renderHeader(); saveLocal(); initFilters();
 }
 
-// File dropzone
+function relinkDeliveryItem(dnId, itemIdx, gaId){
+  const dn = state.deliveryNotes.find(d=>d.id===dnId);
+  if(!dn || !dn.items[itemIdx]) return;
+  dn.items[itemIdx].gaItemId = gaId || "";
+  saveLocal();
+  renderDeliveryNotes();
+  autoFlagClashesForNewData();
+}
+
+function rematchDeliveryItems(){
+  let matched = 0, checked = 0;
+  state.deliveryNotes.forEach(dn=>{
+    dn.items.forEach(it=>{
+      if(it.gaItemId) return;
+      checked++;
+      const ga = findBestGAMatch(it.description);
+      if(ga){ it.gaItemId = ga.id; matched++; }
+    });
+  });
+  saveLocal();
+  renderDeliveryNotes();
+  autoFlagClashesForNewData();
+  toast(matched>0 ? `Linked ${matched} of ${checked} unlinked item(s) to GA.` : `No matches found for ${checked} unlinked item(s) — descriptions may not line up with GA. Link manually via the dropdown.`);
+}
+
 const dnz = document.getElementById('dropzone');
 dnz.addEventListener('dragover', e=>{ e.preventDefault(); dnz.classList.add('drag'); });
 dnz.addEventListener('dragleave', ()=>dnz.classList.remove('drag'));
@@ -994,10 +1536,10 @@ Below the header, there is typically:
 - A MATERIAL LIST / cutting list table with columns similar to: Mark | Size/Section | Grade (e.g. S275, FE510D, 43A) | No. (quantity) | Length | Area | Weight. Extract every row.
 - CONNECTION details: cleats, plates, angles, bolt groups — extract these as their own line items too (e.g. "Base plate 250x250x20").
 
-GROUPING RULE: If a mark series clearly repeats an identical component across many sheets/pages (e.g. VBR1, VBR2, ... VBR80, or PLT1...PLT15 all being the same size/section), group them into ONE line item with the summed quantity, rather than listing each mark separately. Note the mark range in "notes" (e.g. "VBR1-VBR80").
+GROUPING RULE: If a mark series clearly repeats an identical component across many sheets/pages (e.g. VBR1, VBR2, ... VBR80, or PLT1...PLT15 all being the same size/section), group them into ONE line item with the summed quantity, and record the mark range in "marks" (e.g. "VBR1-VBR80").
 
 Return ONLY minified JSON in this exact shape:
-{"items":[{"description":"member type e.g. Purlin, Truss, Column, Rafter, Brace, Base Plate, Cleat","section":"section size e.g. CFLZ150x50x20x2.0, SHS75x75x3.0, UC203x203x46, or plate dims","quantity":12,"unit":"No.|m|kg","confidence":"high|medium|low","notes":"assembly mark or mark range, drawing ref, grade, or other relevant note"}]}
+{"items":[{"description":"member type e.g. Purlin, Truss, Column, Rafter, Brace, Base Plate, Cleat","section":"section size e.g. CFLZ150x50x20x2.0, SHS75x75x3.0, UC203x203x46, or plate dims","quantity":12,"unit":"No.|m|kg","marks":"every individual mark or mark range that makes up this line's quantity, e.g. 'C1-1, C1-2' or 'VBR1-VBR80' — leave empty string if no mark is legible","confidence":"high|medium|low","notes":"drawing ref, grade, or other relevant note (do not repeat the mark here — use the marks field)"}]}
 
 Rules:
 - Read printed or handwritten text and tables carefully, including small/rotated text in material list tables.
@@ -1036,13 +1578,11 @@ function checkGaApiKey(){
    ============================================================ */
 const ASSEMBLY_HEADER_RE = /(\d+)\s*No\.\s*([A-Z][A-Z\s\-]*?)\s*REQUIRED\s*AS\s*DRAWN\s*MARKED\s*([A-Z0-9\-\.]+)/i;
 
-// Extracts {category, totalMarks, totalUnits} rollup from a PDF file's text layer via pdf.js.
-// Returns null if the file isn't a PDF or no header lines are found (e.g. scanned/image-only PDF).
 async function extractCategoryCrossCheck(file){
   if(!isPdfFile(file)) return null;
   const arrayBuf = await file.arrayBuffer();
   const pdf = await pdfjsLib.getDocument({ data: arrayBuf.slice(0) }).promise;
-  const categories = new Map(); // normalized category -> { label, marks:Set, totalUnits }
+  const categories = new Map();
   let pagesMatched = 0;
   for(let i=1;i<=pdf.numPages;i++){
     const page = await pdf.getPage(i);
@@ -1066,16 +1606,409 @@ async function extractCategoryCrossCheck(file){
   return { rows, pagesMatched, numPages: pdf.numPages };
 }
 
-// Renders the cross-check table into the given container element, and (if aiItems provided)
-// flags categories where the AI's summed quantity looks very different from the regex total —
-// a useful signal that AI extraction may have missed pages/batches.
+/* ============================================================
+   ALTERNATIVE IMPORT PATHS — direct PDF text, pasted text, Excel/CSV
+   ============================================================ */
+async function extractPdfTextDirect(file){
+  const arrayBuf = await file.arrayBuffer();
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuf.slice(0) }).promise;
+  let fullText = '';
+  for(let i=1;i<=pdf.numPages;i++){
+    const page = await pdf.getPage(i);
+    const content = await page.getTextContent();
+    const lineMap = new Map();
+    content.items.forEach(it=>{
+      const y = Math.round(it.transform[5]/2)*2;
+      const x = it.transform[4];
+      if(!lineMap.has(y)) lineMap.set(y, []);
+      lineMap.get(y).push({ x, str: it.str });
+    });
+    const sortedY = Array.from(lineMap.keys()).sort((a,b)=>b-a);
+    sortedY.forEach(y=>{
+      const row = lineMap.get(y).sort((a,b)=>a.x-b.x);
+      let line = '', lastEndX = null;
+      row.forEach(cell=>{
+        if(lastEndX !== null){
+          line += (cell.x - lastEndX) > 8 ? '\t' : (line.endsWith(' ')?'':' ');
+        }
+        line += cell.str;
+        lastEndX = cell.x + cell.str.length * 4.5;
+      });
+      if(line.trim()) fullText += line.trim() + '\n';
+    });
+    if(pdf.numPages > 1) fullText += `\n--- Page ${i} of ${pdf.numPages} ---\n`;
+  }
+  return fullText.trim();
+}
+
+async function readExcelRows(file){
+  const buf = await file.arrayBuffer();
+  const wb = XLSX.read(buf, { type:'array' });
+  return wb.SheetNames.map(name => XLSX.utils.sheet_to_json(wb.Sheets[name], { header:1, raw:false, defval:'' }));
+}
+
+const TABLE_HEADER_KEYWORDS = ['description','item','section','size','qty','quantity','unit','mark','notes','remark','profile','partpos','no'];
+
+function detectTableHeader(rowsOfCells){
+  for(let i=0;i<Math.min(3, rowsOfCells.length);i++){
+    const cols = rowsOfCells[i].map(c=>String(c||'').trim().toLowerCase());
+    const hits = cols.filter(c=>c && TABLE_HEADER_KEYWORDS.some(k=>c.includes(k))).length;
+    if(hits>=2) return { headerRowIdx:i, headerCols:cols };
+  }
+  return { headerRowIdx:-1, headerCols:null };
+}
+
+function mapRowToItem(cols, headerCols){
+  let description='', section='', quantity=0, unit='No.', marks='', notes='';
+  if(headerCols){
+    headerCols.forEach((h,ci)=>{
+      const v = cols[ci]; if(v===undefined || v==='') return;
+      const hNoDot = h.replace(/\.$/,'');
+      if(h.includes('desc') || h.includes('item') || h.includes('partpos')) description = v;
+      else if(h.includes('section') || h.includes('size') || h.includes('profile')) section = v;
+      else if(h.includes('qty') || h.includes('quantity') || hNoDot==='no') quantity = parseFloat(String(v).replace(/[^\d.\-]/g,''))||0;
+      else if(h.includes('unit')) unit = v;
+      else if(h.includes('note') || h.includes('remark')) notes = v;
+      else if(h.includes('mark')) marks = v;
+    });
+    if(!description) description = cols[0]||'';
+  } else {
+    const nums = cols.map((c,i)=>({ i, isNum: /^-?\d+(\.\d+)?$/.test(String(c).replace(/,/g,'').trim()) }));
+    const lastNum = [...nums].reverse().find(n=>n.isNum);
+    if(lastNum){
+      quantity = parseFloat(String(cols[lastNum.i]).replace(/,/g,''))||0;
+      const rest = cols.filter((_,i)=>i!==lastNum.i);
+      description = rest[0]||'';
+      section = rest[1]||'';
+    } else {
+      description = cols[0]||'';
+      section = cols[1]||'';
+    }
+  }
+  return { description: String(description).trim(), section: String(section).trim(), quantity, unit: unit||'No.', marks: String(marks).trim(), confidence:'medium', notes: String(notes).trim() };
+}
+
+function collapseMarksToRanges(marks){
+  const byPrefix = new Map();
+  const others = [];
+  marks.forEach(m=>{
+    const match = m.match(/^([A-Za-z\-]*?)(\d+)$/);
+    if(match){
+      const prefix = match[1];
+      const num = parseInt(match[2],10);
+      if(!byPrefix.has(prefix)) byPrefix.set(prefix, []);
+      byPrefix.get(prefix).push({ num, str:m });
+    } else {
+      others.push(m);
+    }
+  });
+  const parts = [];
+  byPrefix.forEach((arr,prefix)=>{
+    arr.sort((a,b)=>a.num-b.num);
+    let i=0;
+    while(i<arr.length){
+      let j=i;
+      while(j+1<arr.length && arr[j+1].num === arr[j].num+1) j++;
+      if(j-i>=2) parts.push(`${prefix}${arr[i].num}-${prefix}${arr[j].num}`);
+      else for(let k=i;k<=j;k++) parts.push(`${prefix}${arr[k].num}`);
+      i=j+1;
+    }
+  });
+  return parts.concat(others).join(', ');
+}
+
+function groupTeklaListRows(rowsOfCells){
+  const clean = rowsOfCells.map(r=>r.map(c=>String(c===undefined||c===null?'':c).trim()));
+  let headerIdx=-1, format=null, headerCols=null;
+  for(let i=0;i<Math.min(20, clean.length);i++){
+    const lower = clean[i].map(c=>c.toLowerCase());
+    const hasPartMark = lower.some(c=>c==='part mark' || c.includes('part mark'));
+    const hasAssembly = lower.some(c=>c==='assembly');
+    const hasProfile = lower.some(c=>c.includes('profile'));
+    if(hasProfile && hasPartMark){ headerIdx=i; format='partlist'; headerCols=lower; break; }
+    if(hasProfile && hasAssembly){ headerIdx=i; format='assemblylist'; headerCols=lower; break; }
+  }
+  if(headerIdx<0) return null;
+
+  const findCol = (keywords)=>{
+    for(const kw of keywords){ const idx = headerCols.findIndex(h=>h===kw); if(idx>=0) return idx; }
+    for(const kw of keywords){ const idx = headerCols.findIndex(h=>h.includes(kw)); if(idx>=0) return idx; }
+    return -1;
+  };
+  const markIdx = format==='partlist' ? findCol(['part mark','mark']) : findCol(['assembly']);
+  const qtyIdx = findCol(['no']);
+  const profileIdx = format==='partlist' ? findCol(['profile']) : findCol(['main part profile','profile']);
+  const lengthIdx = findCol(['length']);
+  const materialIdx = findCol(['material']);
+  const weightIdx = findCol(['weight','mass']);
+  if(markIdx<0 || qtyIdx<0 || profileIdx<0) return null;
+
+  const groups = new Map();
+  for(let i=headerIdx+1;i<clean.length;i++){
+    const row = clean[i];
+    if(!row || row.every(c=>c==='')) continue;
+    if(row.join('').replace(/[-,]/g,'').trim()==='') continue;
+    const mark = row[markIdx]||'';
+    const profile = (row[profileIdx]||'').trim();
+    const qty = parseFloat((row[qtyIdx]||'').replace(/,/g,''));
+    if(!profile || !mark || !Number.isFinite(qty) || qty<=0) continue;
+    const key = profile.toLowerCase();
+    if(!groups.has(key)) groups.set(key, { profile, markBreakdown:[], qty:0, materials:new Set() });
+    const g = groups.get(key);
+    g.qty += qty;
+    const length = lengthIdx>=0 && row[lengthIdx] ? parseFloat(row[lengthIdx].replace(/,/g,''))||null : null;
+    const weight = weightIdx>=0 && row[weightIdx] ? parseFloat(row[weightIdx].replace(/,/g,''))||null : null;
+    const material = materialIdx>=0 && row[materialIdx] ? row[materialIdx].trim() : '';
+    g.markBreakdown.push({
+      mark, qty, length, material,
+      weight: weight,
+      status: 'ga'
+    });
+    if(material) g.materials.add(material);
+  }
+  const items = Array.from(groups.values()).map(g=>{
+    const materials = Array.from(g.materials).filter(Boolean);
+    const notes = materials.length===1 ? materials[0] : (materials.length>1 ? `mixed grades: ${materials.join(', ')}` : '');
+    return {
+      description: g.profile,
+      section: '',
+      quantity: g.qty,
+      unit: 'No.',
+      marks: collapseMarksToRanges(g.markBreakdown.map(m=>m.mark)),
+      markBreakdown: g.markBreakdown,
+      confidence: 'high',
+      notes
+    };
+  });
+  return { format, items };
+}
+
+function rowsToItems(rowsOfCells){
+  const tekla = groupTeklaListRows(rowsOfCells);
+  if(tekla) return tekla;
+  const cleanRows = rowsOfCells.filter(r=>r.some(c=>String(c||'').trim()!==''));
+  if(cleanRows.length===0) return { format:'generic', items:[] };
+  const { headerRowIdx, headerCols } = detectTableHeader(cleanRows);
+  const dataRows = headerRowIdx>=0 ? cleanRows.slice(headerRowIdx+1) : cleanRows;
+  const items = dataRows
+    .map(r=>mapRowToItem(r.map(c=>String(c===undefined||c===null?'':c).trim()), headerCols))
+    .filter(it=>it.description);
+  return { format:'generic', items };
+}
+
+function parseTableText(text){
+  const lines = text.split('\n').map(l=>l.trim()).filter(l=>l && !/^-{2,}\s*Page\s/i.test(l));
+  if(lines.length===0) return { format:'generic', items:[] };
+  const splitLine = (line)=>{
+    if(line.includes('\t')) return line.split('\t').map(c=>c.trim()).filter(c=>c!=='');
+    if(line.split(',').length>=3) return line.split(',').map(c=>c.trim());
+    return line.split(/\s{2,}/).map(c=>c.trim()).filter(c=>c!=='');
+  };
+  return rowsToItems(lines.map(splitLine));
+}
+
+function parseExcelRows(sheets){
+  let best = { format:'generic', items:[] };
+  for(const rowsOfCells of sheets){
+    const result = rowsToItems(rowsOfCells);
+    if(result.items.length > best.items.length) best = result;
+  }
+  return best;
+}
+
+function buildTextModePrompt(basePrompt, pastedText, contextLabel){
+  const marker = '\n\nReturn ONLY minified JSON';
+  const idx = basePrompt.indexOf(marker);
+  const schemaAndRules = idx>=0 ? basePrompt.slice(idx + marker.length) : '';
+  return `You are extracting structural steel ${contextLabel} data from the following plain text. This text may be pasted directly from a PDF's text layer, a spreadsheet, or the output of another AI tool used to pre-extract the data elsewhere for accuracy.
+
+Return ONLY minified JSON${schemaAndRules}
+
+TEXT TO EXTRACT FROM:
+"""
+${pastedText.slice(0, 40000)}
+"""`;
+}
+
+async function handleGaPdfDirect(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  toast('Reading PDF text layer…');
+  try{
+    const text = await extractPdfTextDirect(file);
+    document.getElementById('gaPasteText').value = text;
+    toast(text ? 'PDF text loaded below — review, then Quick Parse or Parse with AI.' : 'No extractable text found — this may be a scanned/image-only PDF (use AI vision upload instead).');
+  }catch(err){ toast('Could not read PDF text: '+err.message); }
+}
+
+function importFormatLabel(format){
+  if(format==='partlist') return 'Tekla Part List';
+  if(format==='assemblylist') return 'Tekla Assembly List';
+  return 'generic table';
+}
+
+async function handleGaExcelImport(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  try{
+    const { format, items } = parseExcelRows(await readExcelRows(file));
+    if(items.length===0){ toast('No item rows recognized in that file.'); return; }
+    toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s) by profile/description.`);
+    applyItemsToGaReview(items);
+  }catch(err){ toast('Could not read Excel/CSV file: '+err.message); }
+}
+function gaQuickParse(){
+  const text = document.getElementById('gaPasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const { format, items } = parseTableText(text);
+  if(items.length===0){ toast('Could not detect any item rows in that text — try Parse with AI instead.'); return; }
+  toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s).`);
+  applyItemsToGaReview(items);
+}
+async function gaParseWithAI(){
+  const text = document.getElementById('gaPasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
+  if(!hasProviderKey(provider)){ toast(`No ${providerLabel(provider)} API key set. Open Settings.`); openSettingsModal(); return; }
+  toast(`Parsing text with ${providerLabel(provider)}…`);
+  try{
+    const parsed = await callTextAI(provider, buildTextModePrompt(GA_DRAWING_PROMPT, text, "GA schedule"));
+    const items = parsed.items || [];
+    if(items.length===0){ toast('AI found no items in that text.'); return; }
+    applyItemsToGaReview(items);
+  }catch(err){ toast('AI parse failed: '+err.message); }
+}
+function applyItemsToGaReview(items){
+  gaReviewItems = items.map(it=>({
+    selected: true, description: it.description||"", section: it.section||"",
+    gaQty: Number(it.quantity)||0, unit: it.unit||"No.", marks: it.marks||"",
+    markBreakdown: it.markBreakdown || [],
+    confidence: it.confidence||"medium", notes: it.notes||""
+  }));
+  document.getElementById('gaReviewCard').style.display='block';
+  renderGaReview();
+  toast(`${gaReviewItems.length} item(s) parsed — review and confirm below.`);
+}
+
+async function handleIssuePdfDirect(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  toast('Reading PDF text layer…');
+  try{
+    const text = await extractPdfTextDirect(file);
+    document.getElementById('issuePasteText').value = text;
+    toast(text ? 'PDF text loaded below — review, then Quick Parse or Parse with AI.' : 'No extractable text found — this may be a scanned/image-only PDF (use AI vision upload instead).');
+  }catch(err){ toast('Could not read PDF text: '+err.message); }
+}
+async function handleIssueExcelImport(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  try{
+    const { format, items } = parseExcelRows(await readExcelRows(file));
+    if(items.length===0){ toast('No item rows recognized in that file.'); return; }
+    toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s) by profile/description.`);
+    applyItemsToIssueEdit(items);
+  }catch(err){ toast('Could not read Excel/CSV file: '+err.message); }
+}
+function issueQuickParse(){
+  const text = document.getElementById('issuePasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const { format, items } = parseTableText(text);
+  if(items.length===0){ toast('Could not detect any item rows in that text — try Parse with AI instead.'); return; }
+  toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s).`);
+  applyItemsToIssueEdit(items);
+}
+async function issueParseWithAI(){
+  const text = document.getElementById('issuePasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
+  if(!hasProviderKey(provider)){ toast(`No ${providerLabel(provider)} API key set. Open Settings.`); openSettingsModal(); return; }
+  toast(`Parsing text with ${providerLabel(provider)}…`);
+  try{
+    const parsed = await callTextAI(provider, buildTextModePrompt(ISSUE_DRAWING_PROMPT, text, "workshop issue"));
+    const items = parsed.items || [];
+    if(items.length===0){ toast('AI found no items in that text.'); return; }
+    applyItemsToIssueEdit(items);
+  }catch(err){ toast('AI parse failed: '+err.message); }
+}
+function applyItemsToIssueEdit(items){
+  items.forEach(it=>{
+    const matched = findBestGAMatch(it.description);
+    issueEditItems.push({
+      gaItemId: matched?.id || "",
+      description: it.description || (matched?matched.description:""),
+      section: it.section || (matched?matched.section:""),
+      qtyIssued: Number(it.quantity) || 0,
+      marks: it.marks || "",
+      notes: it.notes || ""
+    });
+  });
+  renderIssueEditItems();
+  toast(`${items.length} item(s) parsed and added — review in the items table below.`);
+}
+
+async function handleDnPdfDirect(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  toast('Reading PDF text layer…');
+  try{
+    const text = await extractPdfTextDirect(file);
+    document.getElementById('dnPasteText').value = text;
+    toast(text ? 'PDF text loaded below — review, then Quick Parse or Parse with AI.' : 'No extractable text found — this may be a scanned/image-only PDF (use AI vision upload instead).');
+  }catch(err){ toast('Could not read PDF text: '+err.message); }
+}
+async function handleDnExcelImport(e){
+  const file = e.target.files[0]; e.target.value='';
+  if(!file) return;
+  try{
+    const { format, items } = parseExcelRows(await readExcelRows(file));
+    if(items.length===0){ toast('No item rows recognized in that file.'); return; }
+    toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s) by profile/description.`);
+    applyItemsToDnReview(items);
+  }catch(err){ toast('Could not read Excel/CSV file: '+err.message); }
+}
+function dnQuickParse(){
+  const text = document.getElementById('dnPasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const { format, items } = parseTableText(text);
+  if(items.length===0){ toast('Could not detect any item rows in that text — try Parse with AI instead.'); return; }
+  toast(`Detected ${importFormatLabel(format)} — grouped into ${items.length} item(s).`);
+  applyItemsToDnReview(items);
+}
+async function dnParseWithAI(){
+  const text = document.getElementById('dnPasteText').value.trim();
+  if(!text){ toast('Paste some text first.'); return; }
+  const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
+  if(!hasProviderKey(provider)){ toast(`No ${providerLabel(provider)} API key set. Open Settings.`); openSettingsModal(); return; }
+  toast(`Parsing text with ${providerLabel(provider)}…`);
+  try{
+    const parsed = await callTextAI(provider, buildTextModePrompt(DELIVERY_NOTE_OCR_PROMPT, text, "delivery note"));
+    const items = parsed.items || [];
+    if(items.length===0){ toast('AI found no items in that text.'); return; }
+    applyItemsToDnReview(items);
+  }catch(err){ toast('AI parse failed: '+err.message); }
+}
+function applyItemsToDnReview(items){
+  dnReviewItems = items.map(it=>{
+    const matched = findBestGAMatch(it.description);
+    let markList = [];
+    if(matched && matched.markBreakdown && matched.markBreakdown.length > 0){
+      markList = matched.markBreakdown
+        .filter(m=>m.status==='issued')
+        .map(m=>m.mark);
+    }
+    return { selected:true, description: it.description||"", qtyDelivered: Number(it.quantity)||0, gaItemId: matched?.id||"", marks: it.marks||"", markList, confidence: it.confidence||"medium", notes: it.notes||"" };
+  });
+  document.getElementById('dnReviewCard').style.display='block';
+  renderDnReview();
+  toast(`${dnReviewItems.length} item(s) parsed — review and confirm below.`);
+}
+
 function renderCrossCheck(containerEl, crossCheck, aiItems){
   if(!crossCheck || !crossCheck.rows.length){ containerEl.innerHTML = ''; return; }
   const totalUnits = crossCheck.rows.reduce((s,r)=>s+r.totalUnits,0);
   const totalMarks = crossCheck.rows.reduce((s,r)=>s+r.totalMarks,0);
 
-  // Build a rough AI-side total for comparison (best-effort — AI category names won't exactly
-  // match the header line's wording, so this compares grand totals, not per-category).
   let aiTotalUnits = 0;
   if(Array.isArray(aiItems)) aiTotalUnits = aiItems.reduce((s,it)=>s+(Number(it.quantity!==undefined?it.quantity:it.gaQty)||0),0);
 
@@ -1104,10 +2037,6 @@ function renderCrossCheck(containerEl, crossCheck, aiItems){
   `;
 }
 
-// After merging items from all PDF batches, identical assembly types get split across many
-// separate lines (e.g. VBR1 in batch 3, VBR2 in batch 4, etc.) since each batch's AI call only
-// sees its own pages and can't group across batch boundaries. This pass groups items by
-// description+section (normalized) and sums their quantities, restoring a proper rollup.
 function aggregateExtractedItems(items){
   const groups = new Map();
   for(const it of items){
@@ -1115,13 +2044,13 @@ function aggregateExtractedItems(items){
     const section = (it.section||"").trim();
     const key = desc.toLowerCase()+'|'+section.toLowerCase();
     if(!groups.has(key)){
-      groups.set(key, { description: desc, section, quantity: 0, unit: it.unit||"No.", confidence: it.confidence||"medium", notesSet: new Set(), markCount: 0 });
+      groups.set(key, { description: desc, section, quantity: 0, unit: it.unit||"No.", confidence: it.confidence||"medium", notesSet: new Set(), marksSet: new Set(), markCount: 0 });
     }
     const g = groups.get(key);
     g.quantity += Number(it.quantity)||0;
     g.markCount += 1;
     if(it.notes) g.notesSet.add(it.notes);
-    // Downgrade confidence if any contributing line was low/medium
+    if(it.marks) g.marksSet.add(String(it.marks).trim());
     const rank = { high:2, medium:1, low:0 };
     if((rank[it.confidence]??1) < (rank[g.confidence]??1)) g.confidence = it.confidence;
   }
@@ -1131,6 +2060,7 @@ function aggregateExtractedItems(items){
     quantity: g.quantity,
     unit: g.unit,
     confidence: g.confidence,
+    marks: Array.from(g.marksSet).filter(Boolean).join('; '),
     notes: g.markCount > 1 ? `${g.markCount} marks combined${g.notesSet.size?': '+Array.from(g.notesSet).slice(0,3).join(', ')+(g.notesSet.size>3?'…':''):''}` : Array.from(g.notesSet)[0]||""
   }));
 }
@@ -1140,8 +2070,6 @@ async function processGADrawingImage(file){
   const statusEl = document.getElementById('gaExtractStatus');
   const crossCheckEl = document.getElementById('gaCrossCheck');
   if(crossCheckEl) crossCheckEl.innerHTML = '';
-  // Kick off the cross-check in parallel — it's a pure client-side regex pass, no AI cost, so it
-  // shouldn't block or delay the main AI extraction.
   const crossCheckPromise = extractCategoryCrossCheck(file).catch(err=>{ console.error('Cross-check failed:', err); return null; });
   const providers = getCompareProviders();
   const userText = "Extract the member schedule (description, section, quantity) from this GA / part drawing. If multiple pages/images are provided, combine schedules from all of them and avoid duplicate lines. Return as JSON per the system prompt.";
@@ -1177,6 +2105,7 @@ async function processGADrawingImage(file){
       section: it.section || "",
       gaQty: Number(it.quantity) || 0,
       unit: it.unit || "No.",
+      marks: it.marks || "",
       confidence: it.confidence || "medium",
       notes: it.notes || ""
     }));
@@ -1203,6 +2132,7 @@ function renderGaReview(){
       <input value="${esc(it.description)}" onchange="gaReviewItems[${i}].description=this.value" style="min-width:120px;">
       <input value="${esc(it.section)}" onchange="gaReviewItems[${i}].section=this.value" style="min-width:100px;">
       <input type="number" min="0" value="${it.gaQty}" onchange="gaReviewItems[${i}].gaQty=Number(this.value)" style="width:60px;">
+      <input value="${esc(it.marks)}" onchange="gaReviewItems[${i}].marks=this.value" placeholder="e.g. A1-A12" title="Mark(s) this quantity covers">
       <select onchange="gaReviewItems[${i}].confidence=this.value">
         <option value="high" ${it.confidence==='high'?'selected':''}>High</option>
         <option value="medium" ${it.confidence==='medium'?'selected':''}>Medium</option>
@@ -1224,14 +2154,18 @@ function confirmGAReviewItems(){
     ga.section = it.section;
     ga.gaQty = it.gaQty;
     ga.unit = it.unit || "No.";
+    ga.marks = it.marks || "";
     ga.notes = it.notes;
+    if(it.markBreakdown && it.markBreakdown.length > 0){
+      ga.markBreakdown = it.markBreakdown.map(m=>({...m}));
+    }
     state.gaItems.push(ga);
   });
   gaReviewItems = [];
   document.getElementById('gaReviewCard').style.display = 'none';
   document.getElementById('gaExtractStatus').innerHTML = '';
   document.getElementById('gaFileInput').value = '';
-  renderGA(); renderHeader(); saveLocal();
+  renderGA(); renderHeader(); saveLocal(); initFilters();
   toast(`Added ${chosen.length} item(s) to GA schedule.`);
   autoFlagClashesForNewData();
 }
@@ -1250,10 +2184,10 @@ Below the header, there is typically:
 - A MATERIAL LIST / cutting list table with columns similar to: Mark | Size/Section | Grade (e.g. S275, FE510D, 43A) | No. (quantity) | Length | Area | Weight. Extract every row.
 - CONNECTION details: cleats, plates, angles, bolt groups — extract these as their own line items too.
 
-GROUPING RULE: If a mark series clearly repeats an identical component across many sheets/pages (e.g. VBR1, VBR2, ... VBR80, or PLT1...PLT15 all being the same size/section), group them into ONE line item with the summed quantity, rather than listing each mark separately. Note the mark range in "notes" (e.g. "VBR1-VBR80").
+GROUPING RULE: If a mark series clearly repeats an identical component across many sheets/pages (e.g. VBR1, VBR2, ... VBR80, or PLT1...PLT15 all being the same size/section), group them into ONE line item with the summed quantity, and record the mark range in "marks" (e.g. "VBR1-VBR80").
 
 Return ONLY minified JSON in this exact shape:
-{"items":[{"description":"member type e.g. Purlin, Truss, Column, Rafter, Brace, Base Plate, Cleat","section":"section size e.g. CFLZ150x50x20x2.0, SHS75x75x3.0, UC203x203x46, or plate dims","quantity":12,"confidence":"high|medium|low","notes":"assembly mark or mark range, drawing ref, grade, or other relevant note"}]}
+{"items":[{"description":"member type e.g. Purlin, Truss, Column, Rafter, Brace, Base Plate, Cleat","section":"section size e.g. CFLZ150x50x20x2.0, SHS75x75x3.0, UC203x203x46, or plate dims","quantity":12,"marks":"every individual mark or mark range that makes up this line's quantity, e.g. 'C1-1, C1-2' or 'VBR1-VBR80' — leave empty string if no mark is legible","confidence":"high|medium|low","notes":"drawing ref, grade, or other relevant note (do not repeat the mark here — use the marks field)"}]}
 
 Rules:
 - Read printed or handwritten text and tables carefully, including small/rotated text in material list tables.
@@ -1320,11 +2254,22 @@ async function processIssueDrawingImage(file){
     const items = batchCount > 1 ? aggregateExtractedItems(rawItems) : rawItems;
     items.forEach(it=>{
       const matched = findBestGAMatch(it.description);
+      let markList = [];
+      if(matched && matched.markBreakdown && matched.markBreakdown.length > 0){
+        const availableMarks = matched.markBreakdown.filter(m=>m.status==='ga' || !m.status).map(m=>m.mark);
+        if(it.marks){
+          const extractedMarks = it.marks.split(/[,;\s]+/).filter(Boolean);
+          markList = availableMarks.filter(m=>extractedMarks.some(em=>m.toLowerCase().includes(em.toLowerCase())||em.toLowerCase().includes(m.toLowerCase())));
+        }
+        if(markList.length===0) markList = [...availableMarks];
+      }
       issueEditItems.push({
         gaItemId: matched?.id || "",
         description: it.description || (matched?matched.description:""),
         section: it.section || (matched?matched.section:""),
         qtyIssued: Number(it.quantity) || 0,
+        marks: it.marks || "",
+        markList,
         notes: it.notes || ""
       });
     });
@@ -1346,7 +2291,6 @@ async function processIssueDrawingImage(file){
 /* ============================================================
    PDF → IMAGE PIPELINE (client-side rasterization via pdf.js)
    ============================================================ */
-// Check API key (for whichever provider is configured) — Delivery Notes tab
 function checkDnApiKey(){
   const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
   const has = hasProviderKey(provider);
@@ -1379,7 +2323,6 @@ async function renderPdfPageToImage(pdf, pageNum, scale){
   return { dataUrl, b64: dataUrl.split(',')[1], mediaType: 'image/jpeg' };
 }
 
-
 function isPdfFile(file){ return (file.type||"").includes('pdf') || /\.pdf$/i.test(file.name||""); }
 
 function b64ToUint8Array(b64){
@@ -1389,21 +2332,16 @@ function b64ToUint8Array(b64){
   return bytes;
 }
 
-// Kimi's chat-completions API takes image_url parts, not native PDF documents (unlike Claude/
-// Gemini). This rasterizes every page of a base64 PDF into JPEG images via pdf.js so a 'pdf'
-// media part can still be sent to Kimi as a sequence of images.
 async function pdfB64ToImageParts(b64){
   const pdf = await pdfjsLib.getDocument({ data: b64ToUint8Array(b64) }).promise;
   const parts = [];
   for(let i=1;i<=pdf.numPages;i++){
-    const { b64:pageB64, mediaType } = await renderPdfPageToImage(pdf, i, 2);
+    const { b64:pageB64, mediaType } = await renderPdfPageToImage(pdf, i, 2.5);
     parts.push({ kind:'image', b64:pageB64, mediaType });
   }
   return parts;
 }
 
-// Expands any 'pdf' kind media parts into rasterized 'image' parts (for providers, like Kimi and
-// Cerebras, that only accept image input); leaves 'image' parts untouched.
 async function toImageOnlyParts(mediaParts){
   const out = [];
   for(const p of mediaParts){
@@ -1413,28 +2351,17 @@ async function toImageOnlyParts(mediaParts){
   return out;
 }
 
-// Returns a promise resolving to an array of "media parts" for a given File (image or PDF).
-// Images -> [{kind:'image', b64, mediaType}]
-// PDFs (any length) -> sent whole, natively, as [{kind:'pdf', b64}] — preserves the
-//   PDF's real text layer for the AI to read directly, instead of re-OCR'ing a rasterized image.
 async function fileToImageParts(file){
   if(!isPdfFile(file)){
     const b64 = await fileToBase64(file);
     return [{ kind:'image', b64, mediaType: file.type || 'image/jpeg' }];
   }
-  // Always send the whole PDF natively — no page limit, no page picker.
   const b64 = await fileToBase64(file);
   return [{ kind:'pdf', b64 }];
 }
 
-// Max pages per AI extraction call. Dense Tekla shop-drawing PDFs (one assembly per page, each
-// with a full material list table) generate a LOT of JSON per page — sending too many pages in
-// one call risks hitting output token limits and getting truncated. Batching keeps each call's
-// output comfortably within limits, at the cost of one API call per batch.
 const PDF_BATCH_SIZE = 8;
 
-// Splits a PDF File into an array of base64-encoded PDF chunks, each containing at most
-// PDF_BATCH_SIZE pages, using pdf-lib (pages copied natively — text layer preserved).
 async function splitPdfIntoBatches(file, batchSize){
   const arrayBuf = await file.arrayBuffer();
   const srcDoc = await PDFLib.PDFDocument.load(arrayBuf);
@@ -1452,10 +2379,6 @@ async function splitPdfIntoBatches(file, batchSize){
   return { batches, numPages };
 }
 
-// Runs a drawing-extraction prompt across a (possibly multi-batch) PDF or image file, merging
-// the "items" arrays from each batch call into one combined list. statusEl gets live progress.
-// onBatchError(batchInfo, err) is called if a single batch fails — extraction continues with
-// the remaining batches rather than aborting the whole upload.
 async function extractItemsFromFile(file, systemPrompt, userText, statusEl, label, onBatchError, providerOverride){
   if(!isPdfFile(file)){
     const mediaParts = await fileToImageParts(file);
@@ -1479,7 +2402,6 @@ async function extractItemsFromFile(file, systemPrompt, userText, statusEl, labe
     }catch(err){
       console.error(`Batch ${i+1} (pages ${b.startPage}-${b.endPage}) failed:`, err);
       if(onBatchError) onBatchError(b, err);
-      // Continue with remaining batches rather than losing everything already extracted
     }
   }
   return { items: allItems, anyRepaired, batchCount: batches.length };
@@ -1487,9 +2409,6 @@ async function extractItemsFromFile(file, systemPrompt, userText, statusEl, labe
 
 /* ============================================================
    MULTI-MODEL COMPARISON
-   Runs the same extraction across several providers in parallel, fuzzy-matches items
-   across their results by description, and lets the user pick the right value per row
-   in a side-by-side table before anything is added to the real review lists.
    ============================================================ */
 async function extractItemsFromFileForProviders(providers, file, systemPrompt, userText, label){
   const settled = await Promise.allSettled(
@@ -1513,8 +2432,6 @@ async function callVisionAIForProviders(providers, systemPrompt, userText, media
   });
 }
 
-// Loose description matching so the same physical item extracted slightly differently by
-// different models ("Purlin CFLZ150" vs "CFLZ150 Purlin") still lands in the same row.
 function normWordsForMatch(s){ return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(w=>w.length>2); }
 function descriptionsMatch(a, b){
   const na = (a||"").toLowerCase().trim(), nb = (b||"").toLowerCase().trim();
@@ -1527,18 +2444,17 @@ function descriptionsMatch(a, b){
   return overlap.length >= Math.min(2, Math.min(wa.length, wb.length));
 }
 
-// Merges items from multiple successful provider results into one row per distinct item,
-// carrying each provider's own qty/confidence so the comparison table can show them side by side.
 function mergeProviderResults(providerResults){
   const rows = [];
   providerResults.forEach(pr=>{
     pr.items.forEach(it=>{
       let row = rows.find(r=>descriptionsMatch(r.description, it.description));
       if(!row){
-        row = { description: it.description || "", section: it.section || "", unit: it.unit || "No.", notes: it.notes || "", byProvider: {} };
+        row = { description: it.description || "", section: it.section || "", unit: it.unit || "No.", marks: it.marks || "", notes: it.notes || "", byProvider: {} };
         rows.push(row);
       }
       if(!row.section && it.section) row.section = it.section;
+      if(!row.marks && it.marks) row.marks = it.marks;
       if(!row.notes && it.notes) row.notes = it.notes;
       row.byProvider[pr.provider] = { qty: Number(it.quantity) || 0, confidence: it.confidence || "medium" };
     });
@@ -1569,7 +2485,7 @@ function renderCompareModal(){
   document.querySelector('#compareTable thead').innerHTML = `<tr>
     <th></th><th>Description</th><th>Section</th>
     ${providers.map(p=>`<th>${esc(providerLabel(p))}</th>`).join('')}
-    <th>Final Qty</th><th>Notes</th>
+    <th>Final Qty</th><th>Marks</th><th>Notes</th>
   </tr>`;
   document.getElementById('compareTableBody').innerHTML = rows.map((r,i)=>`
     <tr style="background:${r.allAgree ? 'rgba(63,185,80,.07)' : 'rgba(210,153,34,.09)'};">
@@ -1585,6 +2501,7 @@ function renderCompareModal(){
         </td>`;
       }).join('')}
       <td><input type="number" min="0" value="${r.finalQty===null||r.finalQty===undefined?'':r.finalQty}" onchange="compareState.rows[${i}].finalQty=this.value===''?null:Number(this.value); compareState.rows[${i}].chosenProvider=null;" style="width:60px;"></td>
+      <td><input value="${esc(r.marks||'')}" onchange="compareState.rows[${i}].marks=this.value" placeholder="e.g. A1-A12" style="width:90px;"></td>
       <td><input value="${esc(r.notes)}" onchange="compareState.rows[${i}].notes=this.value" placeholder="notes" style="min-width:100px;"></td>
     </tr>
   `).join('');
@@ -1608,7 +2525,7 @@ function applyCompareSelections(){
     chosen.forEach(r=>{
       gaReviewItems.push({
         selected:true, description:r.description, section:r.section, gaQty:r.finalQty,
-        unit:'No.', confidence: r.allAgree?'high':'medium',
+        unit:'No.', marks: r.marks || '', confidence: r.allAgree?'high':'medium',
         notes: r.notes || (r.allAgree ? '' : `qty picked from ${providerLabel(r.chosenProvider)}`)
       });
     });
@@ -1619,7 +2536,7 @@ function applyCompareSelections(){
       const matched = findBestGAMatch(r.description);
       issueEditItems.push({
         gaItemId: matched?.id || "", description:r.description, section:r.section,
-        qtyIssued:r.finalQty, notes: r.notes || (r.allAgree ? '' : `qty picked from ${providerLabel(r.chosenProvider)}`)
+        qtyIssued:r.finalQty, marks: r.marks || '', notes: r.notes || (r.allAgree ? '' : `qty picked from ${providerLabel(r.chosenProvider)}`)
       });
     });
     renderIssueEditItems();
@@ -1628,7 +2545,7 @@ function applyCompareSelections(){
       const matched = findBestGAMatch(r.description);
       dnReviewItems.push({
         selected:true, description:r.description, qtyDelivered:r.finalQty, gaItemId: matched?.id || "",
-        confidence: r.allAgree?'high':'medium', notes: r.notes || (r.allAgree ? '' : `qty picked from ${providerLabel(r.chosenProvider)}`)
+        marks: r.marks || '', confidence: r.allAgree?'high':'medium', notes: r.notes || (r.allAgree ? '' : `qty picked from ${providerLabel(r.chosenProvider)}`)
       });
     });
     document.getElementById('dnReviewCard').style.display = 'block';
@@ -1650,8 +2567,6 @@ function arrayBufferToBase64(buf){
 
 /* ============================================================
    SHARED AI VISION CALL — routes to Claude or Gemini
-   mediaParts: array of {kind:'image'|'pdf', b64, mediaType?}
-   Returns parsed JSON object per systemPrompt's requested shape.
    ============================================================ */
 async function callVisionAI(systemPrompt, userText, mediaParts, statusEl, label, providerOverride){
   const provider = providerOverride || getCfg(LS_KEYS.aiProvider, "anthropic");
@@ -1744,6 +2659,8 @@ async function callVisionAI(systemPrompt, userText, mediaParts, statusEl, label,
     return { parsed: JSON.parse(cleanJsonText(text)), mediaParts };
   } else if(provider === "deepseek"){
     throw new Error("DeepSeek (GitHub Models) is text-only and can't read images or PDFs. Open Settings and pick a different provider for this upload — DeepSeek only works for the AI Clash Check.");
+  } else if(provider === "deepseek-native"){
+    throw new Error("DeepSeek (Official API) is text-only and can't read images or PDFs. Open Settings and pick a different provider for this upload — DeepSeek only works for the AI Clash Check.");
   } else if(provider === "github-llama"){
     throw new Error("Llama 3.3 70B (GitHub Models) is text-only and can't read images or PDFs. Open Settings and pick a different provider for this upload — it only works for the AI Clash Check.");
   } else {
@@ -1777,7 +2694,6 @@ async function callVisionAI(systemPrompt, userText, mediaParts, statusEl, label,
   }
 }
 
-// Process image/PDF through configured AI Vision provider
 async function processDeliveryNoteImage(file){
   if(!checkDnApiKey()){ openSettingsModal(); return; }
   const statusEl = document.getElementById('dnExtractStatus');
@@ -1788,7 +2704,6 @@ async function processDeliveryNoteImage(file){
     statusEl.innerHTML = `<div class="hint"><span class="spin"></span>Preparing file…</div>`;
     const mediaParts = await fileToImageParts(file);
 
-    // Store first page/file for preview — only if it's an image (PDFs aren't previewed inline as <img>)
     const first = mediaParts[0];
     state._pendingImageData = first.kind==='image' ? `data:${first.mediaType};base64,${first.b64}` : "";
 
@@ -1812,14 +2727,19 @@ async function processDeliveryNoteImage(file){
     );
     const items = parsed.items || [];
 
-    // Pre-match to GA items
     dnReviewItems = items.map(it=>{
       const matched = findBestGAMatch(it.description);
+      let markList = [];
+      if(matched && matched.markBreakdown && matched.markBreakdown.length > 0){
+        markList = matched.markBreakdown.filter(m=>m.status==='issued').map(m=>m.mark);
+      }
       return {
         selected: true,
         description: it.description || "",
         qtyDelivered: Number(it.quantity) || 0,
         gaItemId: matched?.id || "",
+        marks: it.marks || "",
+        markList,
         confidence: it.confidence || "medium",
         notes: it.notes || ""
       };
@@ -1836,13 +2756,10 @@ async function processDeliveryNoteImage(file){
 function findBestGAMatch(description){
   if(!description) return null;
   const descLower = description.toLowerCase();
-  // Try exact match first
   let match = state.gaItems.find(ga=>ga.description.toLowerCase()===descLower);
   if(match) return match;
-  // Try includes match
   match = state.gaItems.find(ga=>ga.description.toLowerCase().includes(descLower) || descLower.includes(ga.description.toLowerCase()));
   if(match) return match;
-  // Try word-by-word
   const words = descLower.split(/\s+/).filter(w=>w.length>2);
   for(const ga of state.gaItems){
     const gaWords = ga.description.toLowerCase().split(/\s+/).filter(w=>w.length>2);
@@ -1855,7 +2772,7 @@ function findBestGAMatch(description){
 const DELIVERY_NOTE_OCR_PROMPT = `You are reading a handwritten delivery note from a steel fabrication workshop. Extract every line item showing what was delivered, with quantities.
 
 Return ONLY minified JSON in this exact shape:
-{"items":[{"description":"item name e.g. Purlin CFLZ150","quantity":12,"confidence":"high|medium|low","notes":"any extra text from the line e.g. 'loaded on truck', 'partial delivery'"}]}
+{"items":[{"description":"item name e.g. Purlin CFLZ150","quantity":12,"marks":"any assembly/piece mark(s) written next to this line, e.g. 'A1, A2' — leave empty string if none legible","confidence":"high|medium|low","notes":"any extra text from the line e.g. 'loaded on truck', 'partial delivery'"}]}
 
 Rules:
 - Read handwritten text carefully. If a word is unclear, make your best guess and set confidence to "low".
@@ -1876,6 +2793,7 @@ function renderDnReview(){
         ${state.gaItems.map(ga=>`<option value="${ga.id}" ${it.gaItemId===ga.id?'selected':''}>${esc(ga.description)} ${esc(ga.section)}</option>`).join('')}
       </select>
       <input type="number" min="0" value="${it.qtyDelivered}" onchange="dnReviewItems[${i}].qtyDelivered=Number(this.value)" style="width:60px;">
+      <input value="${esc(it.marks||'')}" onchange="dnReviewItems[${i}].marks=this.value" placeholder="e.g. A1, A2">
       <select onchange="dnReviewItems[${i}].confidence=this.value">
         <option value="high" ${it.confidence==='high'?'selected':''}>High</option>
         <option value="medium" ${it.confidence==='medium'?'selected':''}>Medium</option>
@@ -1896,6 +2814,18 @@ function saveDeliveryNote(){
   const chosen = dnReviewItems.filter(it=>it.selected && it.qtyDelivered>0);
   if(chosen.length===0){ toast('Select at least one item with qty > 0.'); return; }
 
+  chosen.forEach(it=>{
+    if(it.gaItemId && it.markList && it.markList.length > 0){
+      const ga = state.gaItems.find(g=>g.id===it.gaItemId);
+      if(ga && ga.markBreakdown){
+        it.markList.forEach(mark=>{
+          const mb = ga.markBreakdown.find(m=>m.mark===mark);
+          if(mb && mb.status==='issued') mb.status = 'delivered';
+        });
+      }
+    }
+  });
+
   state.deliveryNotes.push({
     id: uid(),
     deliveryDate: date,
@@ -1912,7 +2842,7 @@ function saveDeliveryNote(){
   document.getElementById('dnVehicle').value = '';
   document.getElementById('dnDriver').value = '';
 
-  renderDeliveryNotes(); renderHeader(); saveLocal();
+  renderDeliveryNotes(); renderHeader(); saveLocal(); initFilters();
   toast(`Delivery note saved with ${chosen.length} item(s).`);
   autoFlagClashesForNewData();
 }
@@ -1922,23 +2852,35 @@ function saveDeliveryNote(){
    ============================================================ */
 function computeClashes(){
   const results = [];
+  
   for(const ga of state.gaItems){
-    // Sum all issued qty for this GA item
+    if(!itemMatchesFilters(ga, 'ga')) continue;
+    
     const totalIssued = state.workshopIssues.reduce((sum,iss)=>{
-      const match = iss.items.find(it=>it.gaItemId===ga.id);
-      return sum + (match ? Number(match.qtyIssued)||0 : 0);
+      return sum + iss.items.filter(it => it.gaItemId === ga.id && itemMatchesFilters(it, 'issue'))
+        .reduce((s,it)=>s+(Number(it.qtyIssued)||0),0);
     },0);
-    // Sum all delivered qty for this GA item
+    
     const totalDelivered = state.deliveryNotes.reduce((sum,dn)=>{
-      const match = dn.items.find(it=>it.gaItemId===ga.id);
-      return sum + (match ? Number(match.qtyDelivered)||0 : 0);
+      return sum + dn.items.filter(it => it.gaItemId === ga.id && itemMatchesFilters(it, 'delivery'))
+        .reduce((s,it)=>s+(Number(it.qtyDelivered)||0),0);
     },0);
-
+    
     const issueClash = totalIssued !== ga.gaQty;
-    const deliveryClash = totalDelivered !== totalIssued;
+    const deliveryClash = totalIssued > 0 && totalDelivered !== totalIssued;
     const issueDiff = totalIssued - ga.gaQty;
     const deliveryDiff = totalDelivered - totalIssued;
-
+    
+    let markStatus = null;
+    if(ga.markBreakdown && ga.markBreakdown.length > 0){
+      markStatus = {
+        ga: ga.markBreakdown.filter(m=>!m.status || m.status==='ga').map(m=>m.mark),
+        issued: ga.markBreakdown.filter(m=>m.status==='issued').map(m=>m.mark),
+        delivered: ga.markBreakdown.filter(m=>m.status==='delivered').map(m=>m.mark),
+        all: ga.markBreakdown.map(m=>({mark:m.mark, status:m.status||'ga'}))
+      };
+    }
+    
     results.push({
       gaItem: ga,
       gaQty: ga.gaQty,
@@ -1947,9 +2889,74 @@ function computeClashes(){
       issueClash: ga.gaQty > 0 && issueClash,
       deliveryClash: totalIssued > 0 && deliveryClash,
       issueDiff,
-      deliveryDiff
+      deliveryDiff,
+      markStatus,
+      isUnlinked: false
     });
   }
+  
+  const unlinkedIssueMap = new Map();
+  state.workshopIssues.forEach(iss => {
+    iss.items.forEach(it => {
+      if(!it.gaItemId && itemMatchesFilters(it, 'issue')) {
+        const key = (it.description + '|' + it.section).toLowerCase();
+        if(!unlinkedIssueMap.has(key)) {
+          unlinkedIssueMap.set(key, {
+            description: it.description,
+            section: it.section,
+            totalIssued: 0,
+            totalDelivered: 0,
+            issueRefs: new Set(),
+            deliveryRefs: new Set()
+          });
+        }
+        const entry = unlinkedIssueMap.get(key);
+        entry.totalIssued += Number(it.qtyIssued) || 0;
+        entry.issueRefs.add(iss.issueRef);
+      }
+    });
+  });
+  
+  state.deliveryNotes.forEach(dn => {
+    dn.items.forEach(it => {
+      if(!it.gaItemId && itemMatchesFilters(it, 'delivery')) {
+        const key = (it.description + '|' + it.section).toLowerCase();
+        if(!unlinkedIssueMap.has(key)) {
+          unlinkedIssueMap.set(key, {
+            description: it.description,
+            section: it.section,
+            totalIssued: 0,
+            totalDelivered: 0,
+            issueRefs: new Set(),
+            deliveryRefs: new Set()
+          });
+        }
+        const entry = unlinkedIssueMap.get(key);
+        entry.totalDelivered += Number(it.qtyDelivered) || 0;
+        entry.deliveryRefs.add(dn.deliveryDate);
+      }
+    });
+  });
+  
+  unlinkedIssueMap.forEach((entry, key) => {
+    results.push({
+      gaItem: null,
+      description: entry.description,
+      section: entry.section,
+      gaQty: 0,
+      totalIssued: entry.totalIssued,
+      totalDelivered: entry.totalDelivered,
+      issueClash: entry.totalIssued > 0,
+      deliveryClash: entry.totalIssued > 0 && entry.totalDelivered !== entry.totalIssued,
+      issueDiff: entry.totalIssued,
+      deliveryDiff: entry.totalDelivered - entry.totalIssued,
+      markStatus: null,
+      isUnlinked: true,
+      issueRefs: Array.from(entry.issueRefs),
+      deliveryRefs: Array.from(entry.deliveryRefs)
+    });
+  });
+  
   return results;
 }
 
@@ -1958,8 +2965,6 @@ function runClashCheck(){
   toast('Clash check complete.');
 }
 
-// Called automatically after any of the three imports (GA / Issue / Delivery) — lightweight, local, no API call.
-// Recomputes clashes and toasts a warning if new mismatches exist, so the user gets immediate feedback.
 function autoFlagClashesForNewData(){
   const clashes = computeClashes();
   const clashCount = clashes.filter(c=>c.issueClash||c.deliveryClash).length;
@@ -1967,15 +2972,11 @@ function autoFlagClashesForNewData(){
   if(clashCount>0){
     toast(`⚠ ${clashCount} quantity clash(es) detected — check the Clash Check tab.`);
   }
-  // Keep the clash tab fresh if it's currently visible
   if(document.getElementById('panel-clash').classList.contains('active')) renderClashCheck();
 }
 
 /* ============================================================
-   AI-ASSISTED CLASH CHECK — uses configured AI model (Claude/Gemini)
-   to match ambiguous/unlinked items across GA, Issue, and Delivery
-   data and flag likely duplicates, naming mismatches, or discrepancies
-   that simple exact-ID matching misses.
+   AI-ASSISTED CLASH CHECK
    ============================================================ */
 async function runAiClashCheck(){
   const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
@@ -1992,7 +2993,6 @@ async function runAiClashCheck(){
   bodyEl.innerHTML = '';
 
   try{
-    // Build a compact dataset for the AI: GA items, all issued items, all delivered items (with link status)
     const gaList = state.gaItems.map(g=>({ id:g.id, description:g.description, section:g.section, gaQty:g.gaQty, unit:g.unit }));
     const issuedList = [];
     state.workshopIssues.forEach(iss=>iss.items.forEach(it=>{
@@ -2055,7 +3055,6 @@ DELIVERED: ${JSON.stringify(deliveredList)}`;
   }
 }
 
-// Shared text-only AI call (no image) — used for clash analysis
 async function callTextAI(prompt, statusEl, label){
   const provider = getCfg(LS_KEYS.aiProvider, "anthropic");
   if(provider === "gemini"){
@@ -2128,6 +3127,24 @@ async function callTextAI(prompt, statusEl, label){
     const text = data?.choices?.[0]?.message?.content || "";
     if(!text) throw new Error("No text in DeepSeek response");
     return JSON.parse(cleanJsonText(text));
+  } else if(provider === "deepseek-native"){
+    const key = getCfg(LS_KEYS.deepseekKey,"");
+    if(!key) throw new Error("No DeepSeek API key set.");
+    const res = await fetch("https://api.deepseek.com/chat/completions", {
+      method:"POST",
+      headers:{ "content-type":"application/json", "authorization":`Bearer ${key}` },
+      body: JSON.stringify({
+        model: "deepseek-v4-flash",
+        max_tokens: 3000,
+        response_format: { type:"json_object" },
+        messages: [{ role:"user", content: prompt }],
+      }),
+    });
+    if(!res.ok){ const t = await res.text(); throw new Error(`DeepSeek (Official API) error ${res.status}: ${t.slice(0,300)}`); }
+    const data = await res.json();
+    const text = data?.choices?.[0]?.message?.content || "";
+    if(!text) throw new Error("No text in DeepSeek response");
+    return JSON.parse(cleanJsonText(text));
   } else if(provider === "github-llama"){
     const key = getCfg(LS_KEYS.githubKey,"");
     if(!key) throw new Error("No GitHub token set for Llama.");
@@ -2172,7 +3189,7 @@ function renderClashCheck(){
   const body = document.getElementById('clashBody');
   const empty = document.getElementById('clashEmpty');
 
-  if(state.gaItems.length===0){
+  if(state.gaItems.length===0 && !clashes.some(c=>c.isUnlinked)){
     empty.style.display='block';
     summary.innerHTML='';
     body.innerHTML='';
@@ -2182,9 +3199,10 @@ function renderClashCheck(){
 
   const clashCount = clashes.filter(c=>c.issueClash||c.deliveryClash).length;
   const okCount = clashes.length - clashCount;
-  const overIssued = clashes.filter(c=>c.issueDiff>0).length;
-  const underIssued = clashes.filter(c=>c.issueDiff<0).length;
-  const deliveryMismatch = clashes.filter(c=>c.deliveryClash).length;
+  const overIssued = clashes.filter(c=>c.issueDiff>0 && !c.isUnlinked).length;
+  const underIssued = clashes.filter(c=>c.issueDiff<0 && !c.isUnlinked).length;
+  const deliveryMismatch = clashes.filter(c=>c.deliveryClash && !c.isUnlinked).length;
+  const unlinkedCount = clashes.filter(c=>c.isUnlinked && c.issueClash).length;
 
   summary.innerHTML = `
     <div class="clash-card ${clashCount===0?'ok':'clash'}">
@@ -2207,22 +3225,37 @@ function renderClashCheck(){
       <div class="label">Delivery Mismatch</div>
       <div class="value" style="color:var(${deliveryMismatch>0?'--red':'--green'});">${deliveryMismatch}</div>
     </div>
+    <div class="clash-card ${unlinkedCount>0?'clash':'ok'}">
+      <div class="label">Unlinked Items</div>
+      <div class="value" style="color:var(${unlinkedCount>0?'--red':'--green'});">${unlinkedCount}</div>
+    </div>
   `;
 
   body.innerHTML = clashes.map(c=>{
-    const issueBadge = !c.gaQty ? '<span class="badge neutral">No GA qty</span>' :
-                       c.issueClash ?
-                         (c.issueDiff>0?`<span class="badge clash">+${c.issueDiff} over</span>`:`<span class="badge clash">${c.issueDiff} short</span>`) :
-                         '<span class="badge ok">Match</span>';
-    const deliveryBadge = c.totalIssued===0 ? '<span class="badge neutral">N/A</span>' :
-                          c.deliveryClash ?
-                            (c.deliveryDiff>0?`<span class="badge clash">+${c.deliveryDiff} over</span>`:`<span class="badge clash">${c.deliveryDiff} short</span>`) :
-                            '<span class="badge ok">Match</span>';
+    const issueBadge = c.isUnlinked 
+      ? (c.totalIssued > 0 ? '<span class="badge clash">Not in GA</span>' : '<span class="badge neutral">N/A</span>')
+      : (!c.gaQty ? '<span class="badge neutral">No GA qty</span>' :
+         c.issueClash ?
+           (c.issueDiff>0?`<span class="badge clash">+${c.issueDiff} over</span>`:`<span class="badge clash">${c.issueDiff} short</span>`) :
+           '<span class="badge ok">Match</span>');
+    const deliveryBadge = c.isUnlinked
+      ? (c.totalIssued===0 ? '<span class="badge neutral">N/A</span>' :
+         c.deliveryClash ?
+           (c.deliveryDiff>0?`<span class="badge clash">+${c.deliveryDiff} over</span>`:`<span class="badge clash">${c.deliveryDiff} short</span>`) :
+           '<span class="badge ok">Match</span>')
+      : (c.totalIssued===0 ? '<span class="badge neutral">N/A</span>' :
+         c.deliveryClash ?
+           (c.deliveryDiff>0?`<span class="badge clash">+${c.deliveryDiff} over</span>`:`<span class="badge clash">${c.deliveryDiff} short</span>`) :
+           '<span class="badge ok">Match</span>');
     const rowClass = (c.issueClash||c.deliveryClash) ? 'style="background:rgba(248,81,73,.08);"' : '';
+    const hasMarks = !c.isUnlinked && c.markStatus && c.markStatus.all && c.markStatus.all.length > 0;
+    const markDetails = hasMarks ? renderClashMarkStatus(c.markStatus) : '';
+    const descCell = c.isUnlinked 
+      ? `${esc(c.description)}<br><span class="mono" style="font-size:11px;color:var(--muted2);">${esc(c.section)}</span><br><span class="badge warn">UNLINKED</span>`
+      : `${esc(c.gaItem.description)}<br><span class="mono" style="font-size:11px;color:var(--muted2);">${esc(c.gaItem.section)}</span>`;
     return `
       <tr ${rowClass}>
-        <td>${esc(c.gaItem.description)}</td>
-        <td class="mono">${esc(c.gaItem.section)}</td>
+        <td>${descCell}</td>
         <td style="text-align:center;font-weight:700;">${c.gaQty}</td>
         <td style="text-align:center;">${c.totalIssued}</td>
         <td style="text-align:center;">${c.totalDelivered}</td>
@@ -2230,8 +3263,21 @@ function renderClashCheck(){
         <td style="text-align:center;">${deliveryBadge}</td>
         <td>${(c.issueClash||c.deliveryClash)?'<span class="badge clash">CLASH</span>':'<span class="badge ok">OK</span>'}</td>
       </tr>
+      ${markDetails?`<tr><td colspan="7" style="padding:0;border-bottom:1px solid var(--line);"><div style="padding:8px 12px 10px 16px;background:#0f1923;">${markDetails}</div></td></tr>`:''}
     `;
   }).join('');
+}
+
+function renderClashMarkStatus(markStatus){
+  if(!markStatus || !markStatus.all || markStatus.all.length===0) return '';
+  const { ga, issued, delivered } = markStatus;
+  return `
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:flex-start;">
+      ${ga.length>0?`<div class="mark-status-section"><h5>In GA only (${ga.length})</h5><div class="mark-status-grid">${ga.map(m=>`<div class="mark-status-cell ga">${esc(m)}</div>`).join('')}</div></div>`:''}
+      ${issued.length>0?`<div class="mark-status-section"><h5>Issued to Workshop (${issued.length})</h5><div class="mark-status-grid">${issued.map(m=>`<div class="mark-status-cell issued">${esc(m)}</div>`).join('')}</div></div>`:''}
+      ${delivered.length>0?`<div class="mark-status-section"><h5>Delivered to Site (${delivered.length})</h5><div class="mark-status-grid">${delivered.map(m=>`<div class="mark-status-cell delivered">${esc(m)}</div>`).join('')}</div></div>`:''}
+    </div>
+  `;
 }
 
 /* ============================================================
@@ -2350,7 +3396,7 @@ function buildPrintDocument(sel){
 }
 
 function printGAScheduleHtml(){
-  const rows = state.gaItems.map((it,i)=>`
+  const rows = state.gaItems.filter(it=>itemMatchesFilters(it,'ga')).map((it,i)=>`
     <tr>
       <td>${i+1}</td>
       <td>${esc(it.description)}</td>
@@ -2362,26 +3408,32 @@ function printGAScheduleHtml(){
       <td style="text-align:center;">${it.elevationQty||'—'}</td>
       <td style="text-align:center;">${it.threeDQty||'—'}</td>
       <td>${esc(it.drawingRef)}</td>
+      <td>${esc(it.marks||'—')}</td>
     </tr>
-  `).join('') || '<tr><td colspan="10" style="text-align:center;color:#888;">No GA items</td></tr>';
+  `).join('') || '<tr><td colspan="11" style="text-align:center;color:#888;">No GA items match filter</td></tr>';
   return `
     <h2>GA Schedule — Master Quantity Register</h2>
     <table>
-      <thead><tr><th>#</th><th>Description</th><th>Section</th><th>Category</th><th>Unit</th><th>GA Qty</th><th>Plan Qty</th><th>Elevation Qty</th><th>3D Qty</th><th>Drawing Ref</th></tr></thead>
+      <thead><tr><th>#</th><th>Description</th><th>Section</th><th>Category</th><th>Unit</th><th>GA Qty</th><th>Plan Qty</th><th>Elevation Qty</th><th>3D Qty</th><th>Drawing Ref</th><th>Marks</th></tr></thead>
       <tbody>${rows}</tbody>
     </table>`;
 }
 
 function printIssueSummaryHtml(){
-  if(state.workshopIssues.length===0) return '<h2>Workshop Issue Summary</h2><p style="color:#888;">No issue records.</p>';
+  const filtered = state.workshopIssues.map(iss => {
+    const items = iss.items.filter(it => itemMatchesFilters(it, 'issue'));
+    return items.length ? { ...iss, items } : null;
+  }).filter(Boolean);
+  
+  if(filtered.length===0) return '<h2>Workshop Issue Summary</h2><p style="color:#888;">No issue records match filter.</p>';
   let html = '<h2>Workshop Issue Summary</h2>';
-  for(const iss of state.workshopIssues){
+  for(const iss of filtered){
     const totalQty = iss.items.reduce((s,it)=>s+(Number(it.qtyIssued)||0),0);
     html += `<h3 style="font-size:12px;color:#1c5ea8;margin:12px 0 6px;">${esc(iss.issueRef)} — ${displayDate(iss.issueDate)} — ${iss.items.length} items, ${totalQty} qty</h3>`;
     html += `<table>
-      <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th></tr></thead>
+      <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th><th>Marks</th></tr></thead>
       <tbody>
-        ${iss.items.map(it=>`<tr><td>${esc(it.description)}</td><td>${esc(it.section)}</td><td>${it.qtyIssued}</td></tr>`).join('')}
+        ${iss.items.map(it=>`<tr><td>${esc(it.description)}</td><td>${esc(it.section)}</td><td>${it.qtyIssued}</td><td>${esc(it.marks||'—')}</td></tr>`).join('')}
       </tbody>
     </table>`;
   }
@@ -2389,17 +3441,22 @@ function printIssueSummaryHtml(){
 }
 
 function printDeliverySummaryHtml(){
-  if(state.deliveryNotes.length===0) return '<h2>Delivery Notes Summary</h2><p style="color:#888;">No delivery notes.</p>';
+  const filtered = state.deliveryNotes.map(dn => {
+    const items = dn.items.filter(it => itemMatchesFilters(it, 'delivery'));
+    return items.length ? { ...dn, items } : null;
+  }).filter(Boolean);
+  
+  if(filtered.length===0) return '<h2>Delivery Notes Summary</h2><p style="color:#888;">No delivery notes match filter.</p>';
   let html = '<h2>Delivery Notes Summary</h2>';
-  for(const dn of state.deliveryNotes){
+  for(const dn of filtered){
     const totalQty = dn.items.reduce((s,it)=>s+(Number(it.qtyDelivered)||0),0);
     html += `<h3 style="font-size:12px;color:#1c5ea8;margin:12px 0 6px;">${displayDate(dn.deliveryDate)} — Vehicle: ${esc(dn.vehicleRef||'—')} — ${dn.items.length} items, ${totalQty} qty</h3>`;
     html += `<table>
-      <thead><tr><th>Description</th><th>Qty Delivered</th><th>Confidence</th></tr></thead>
+      <thead><tr><th>Description</th><th>Qty Delivered</th><th>Marks</th><th>Confidence</th></tr></thead>
       <tbody>
         ${dn.items.map(it=>{
           const conf = it.confidence==='high'?'High':it.confidence==='medium'?'Medium':'Low';
-          return `<tr><td>${esc(it.description)}</td><td>${it.qtyDelivered}</td><td>${conf}</td></tr>`;
+          return `<tr><td>${esc(it.description)}</td><td>${it.qtyDelivered}</td><td>${esc(it.marks||'—')}</td><td>${conf}</td></tr>`;
         }).join('')}
       </tbody>
     </table>`;
@@ -2425,20 +3482,36 @@ function printClashHtml(onlyClashes){
     <thead><tr><th>Description</th><th>Section</th><th>GA Qty</th><th>Issued</th><th>Delivered</th><th>Issue Status</th><th>Delivery Status</th></tr></thead>
     <tbody>`;
   for(const c of filtered){
-    const issueStatus = !c.gaQty ? 'No GA qty' :
-                        c.issueClash ? (c.issueDiff>0?`Over by ${c.issueDiff}`:`Short by ${Math.abs(c.issueDiff)}`) : 'Match';
-    const deliveryStatus = c.totalIssued===0 ? 'N/A' :
-                           c.deliveryClash ? (c.deliveryDiff>0?`Over by ${c.deliveryDiff}`:`Short by ${Math.abs(c.deliveryDiff)}`) : 'Match';
-    const rowClass = (c.issueClash||c.deliveryClash) ? 'class="clash-row"' : '';
-    html += `<tr ${rowClass}>
-      <td>${esc(c.gaItem.description)}</td>
-      <td>${esc(c.gaItem.section)}</td>
-      <td style="text-align:center;font-weight:700;">${c.gaQty}</td>
-      <td style="text-align:center;">${c.totalIssued}</td>
-      <td style="text-align:center;">${c.totalDelivered}</td>
-      <td>${issueStatus}</td>
-      <td>${deliveryStatus}</td>
-    </tr>`;
+    if(c.isUnlinked) {
+      const issueStatus = c.totalIssued > 0 ? `Not in GA — issued ${c.totalIssued}` : 'N/A';
+      const deliveryStatus = c.totalIssued===0 ? 'N/A' : c.deliveryClash ? (c.deliveryDiff>0?`Over by ${c.deliveryDiff}`:`Short by ${Math.abs(c.deliveryDiff)}`) : 'Match';
+      html += `<tr class="clash-row">
+        <td>${esc(c.description)}<br><span style="font-size:10px;color:#555;">UNLINKED</span></td>
+        <td>${esc(c.section)}</td>
+        <td style="text-align:center;font-weight:700;">0</td>
+        <td style="text-align:center;">${c.totalIssued}</td>
+        <td style="text-align:center;">${c.totalDelivered}</td>
+        <td>${issueStatus}</td>
+        <td>${deliveryStatus}</td>
+      </tr>`;
+    } else {
+      const issueStatus = !c.gaQty ? 'No GA qty' :
+                         c.issueClash ?
+                           (c.issueDiff>0?`Over by ${c.issueDiff}`:`Short by ${Math.abs(c.issueDiff)}`) : 'Match';
+      const deliveryStatus = c.totalIssued===0 ? 'N/A' :
+                             c.deliveryClash ?
+                               (c.deliveryDiff>0?`Over by ${c.deliveryDiff}`:`Short by ${Math.abs(c.deliveryDiff)}`) : 'Match';
+      const rowClass = (c.issueClash||c.deliveryClash) ? 'class="clash-row"' : '';
+      html += `<tr ${rowClass}>
+        <td>${esc(c.gaItem.description)}</td>
+        <td>${esc(c.gaItem.section)}</td>
+        <td style="text-align:center;font-weight:700;">${c.gaQty}</td>
+        <td style="text-align:center;">${c.totalIssued}</td>
+        <td style="text-align:center;">${c.totalDelivered}</td>
+        <td>${issueStatus}</td>
+        <td>${deliveryStatus}</td>
+      </tr>`;
+    }
   }
   html += '</tbody></table>';
   return html;
@@ -2519,19 +3592,19 @@ function exportExcel(){
   const wb = XLSX.utils.book_new();
   const p = state.project;
 
-  // GA Schedule sheet
   const gaRows = [["GA SCHEDULE — MASTER QUANTITY REGISTER"],["Project:",p.name,"Client:",p.client||"","Project #:",p.projectNumber||""],[]];
   gaRows.push(["#","Description","Section","Category","Unit","GA Qty","Plan Qty","Elevation Qty","3D Qty","Drawing Ref","Notes"]);
-  state.gaItems.forEach((it,i)=>gaRows.push([i+1,it.description,it.section,it.category,it.unit,it.gaQty,it.planQty,it.elevationQty,it.threeDQty,it.drawingRef,it.notes]));
+  state.gaItems.filter(it=>itemMatchesFilters(it,'ga')).forEach((it,i)=>gaRows.push([i+1,it.description,it.section,it.category,it.unit,it.gaQty,it.planQty,it.elevationQty,it.threeDQty,it.drawingRef,it.notes]));
   const gaWs = XLSX.utils.aoa_to_sheet(gaRows);
   XLSX.utils.book_append_sheet(wb, gaWs, "GA Schedule");
 
-  // Workshop Issues sheet
   const issRows = [["WORKSHOP ISSUE RECORDS"],[]];
   for(const iss of state.workshopIssues){
+    const filtered = iss.items.filter(it=>itemMatchesFilters(it,'issue'));
+    if(!filtered.length) continue;
     issRows.push(["Issue Ref:",iss.issueRef,"Date:",iss.issueDate,"Issued By:",iss.issuedBy||""]);
     issRows.push(["Description","Section","Qty Issued","Linked GA Item"]);
-    iss.items.forEach(it=>{
+    filtered.forEach(it=>{
       const ga = state.gaItems.find(g=>g.id===it.gaItemId);
       issRows.push([it.description,it.section,it.qtyIssued,ga?ga.description:"unlinked"]);
     });
@@ -2540,12 +3613,13 @@ function exportExcel(){
   const issWs = XLSX.utils.aoa_to_sheet(issRows);
   XLSX.utils.book_append_sheet(wb, issWs, "Workshop Issues");
 
-  // Delivery Notes sheet
   const dnRows = [["DELIVERY NOTES"],[]];
   for(const dn of state.deliveryNotes){
+    const filtered = dn.items.filter(it=>itemMatchesFilters(it,'delivery'));
+    if(!filtered.length) continue;
     dnRows.push(["Date:",dn.deliveryDate,"Vehicle:",dn.vehicleRef||"","Driver:",dn.driverName||""]);
     dnRows.push(["Description","Qty Delivered","Confidence","Linked GA Item"]);
-    dn.items.forEach(it=>{
+    filtered.forEach(it=>{
       const ga = state.gaItems.find(g=>g.id===it.gaItemId);
       dnRows.push([it.description,it.qtyDelivered,it.confidence,ga?ga.description:"unlinked"]);
     });
@@ -2554,11 +3628,14 @@ function exportExcel(){
   const dnWs = XLSX.utils.aoa_to_sheet(dnRows);
   XLSX.utils.book_append_sheet(wb, dnWs, "Delivery Notes");
 
-  // Clash Check sheet
   const clashes = computeClashes();
   const clashRows = [["3-STAGE CLASH CHECK"],["Description","Section","GA Qty","Total Issued","Total Delivered","Issue Diff","Delivery Diff","Status"]];
   clashes.forEach(c=>{
-    clashRows.push([c.gaItem.description,c.gaItem.section,c.gaQty,c.totalIssued,c.totalDelivered,c.issueDiff,c.deliveryDiff,(c.issueClash||c.deliveryClash)?"CLASH":"OK"]);
+    if(c.isUnlinked) {
+      clashRows.push([c.description + ' (UNLINKED)', c.section, 0, c.totalIssued, c.totalDelivered, c.totalIssued, c.totalDelivered - c.totalIssued, "CLASH — NOT IN GA"]);
+    } else {
+      clashRows.push([c.gaItem.description,c.gaItem.section,c.gaQty,c.totalIssued,c.totalDelivered,c.issueDiff,c.deliveryDiff,(c.issueClash||c.deliveryClash)?"CLASH":"OK"]);
+    }
   });
   const clashWs = XLSX.utils.aoa_to_sheet(clashRows);
   XLSX.utils.book_append_sheet(wb, clashWs, "Clash Check");
@@ -2578,6 +3655,7 @@ function openSettingsModal(){
   document.getElementById('cfgKimiKey').value = getCfg(LS_KEYS.kimiKey, "");
   document.getElementById('cfgCerebrasKey').value = getCfg(LS_KEYS.cerebrasKey, "");
   document.getElementById('cfgGithubKey').value = getCfg(LS_KEYS.githubKey, "");
+  document.getElementById('cfgDeepseekKey').value = getCfg(LS_KEYS.deepseekKey, "");
   document.getElementById('cfgAiProvider').value = getCfg(LS_KEYS.aiProvider, "anthropic");
   const compareOn = getCfg(LS_KEYS.compareMode,"") === "1";
   document.getElementById('cfgCompareMode').checked = compareOn;
@@ -2598,6 +3676,7 @@ function saveSettings(){
   localStorage.setItem(LS_KEYS.kimiKey, document.getElementById('cfgKimiKey').value.trim());
   localStorage.setItem(LS_KEYS.cerebrasKey, document.getElementById('cfgCerebrasKey').value.trim());
   localStorage.setItem(LS_KEYS.githubKey, document.getElementById('cfgGithubKey').value.trim());
+  localStorage.setItem(LS_KEYS.deepseekKey, document.getElementById('cfgDeepseekKey').value.trim());
   localStorage.setItem(LS_KEYS.aiProvider, document.getElementById('cfgAiProvider').value);
   localStorage.setItem(LS_KEYS.compareMode, document.getElementById('cfgCompareMode').checked ? "1" : "");
   const compareList = [];
@@ -2635,35 +3714,24 @@ function fmtISO(d){ if(!d) return ""; const y=d.getFullYear(),m=String(d.getMont
 function displayDate(s){ const d=parseISO(s); if(!d) return "—"; return `${String(d.getDate()).padStart(2,'0')}/${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`; }
 function cleanJsonText(text){
   let t = text.trim().replace(/^```json/i,'').replace(/^```/,'').replace(/```$/,'').trim();
-  // Some models occasionally add stray prose before/after the JSON block — isolate from first { or [ to last matching } or ]
   const firstBrace = t.search(/[\{\[]/);
   if(firstBrace > 0) t = t.slice(firstBrace);
   const lastBrace = Math.max(t.lastIndexOf('}'), t.lastIndexOf(']'));
   if(lastBrace !== -1 && lastBrace < t.length-1) t = t.slice(0, lastBrace+1);
 
-  // Try parsing as-is first
   try{ JSON.parse(t); return t; }catch(e){ /* fall through to repair */ }
 
-  // Response was likely truncated mid-array (hit token limit). Attempt to salvage complete items:
-  // find the last well-formed object inside the "items" array and close the JSON structure there.
   const repaired = repairTruncatedJson(t);
   if(repaired !== t) window._lastJsonWasRepaired = true;
   return repaired;
 }
 
-// Attempts to recover a valid JSON object from truncated text by trimming back to the last
-// complete top-level array element (e.g. the last fully-closed "{...}" inside an "items" array)
-// and re-closing brackets in the correct nested order. Returns the original text if repair
-// isn't possible (caller will then see the original parse error, which is still informative).
 function repairTruncatedJson(t){
   const lastCompleteObjEnd = t.lastIndexOf('}');
   if(lastCompleteObjEnd === -1) return t;
   let candidate = t.slice(0, lastCompleteObjEnd+1);
-  // Remove a trailing comma left dangling after the last complete object (e.g. "...},")
   candidate = candidate.replace(/,\s*$/, '');
 
-  // Walk the string (respecting quoted strings/escapes) to build a stack of open brackets,
-  // then close them in reverse order — naive bracket counting gets the nesting order wrong.
   const stack = [];
   let inString = false, escaped = false;
   for(let i=0;i<candidate.length;i++){
@@ -2691,7 +3759,7 @@ function toast(msg){
   window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
 }
 function renderAll(){
-  renderHeader(); renderGA(); renderIssues(); renderDeliveryNotes();
+  renderHeader(); renderGA(); renderIssues(); renderDeliveryNotes(); renderFilterTotals(); initFilters();
 }
 
 /* ============================================================
@@ -2702,6 +3770,7 @@ loadLocal();
 checkDnApiKey();
 checkGaApiKey();
 renderAll();
+
 </script>
 </body>
 </html>
