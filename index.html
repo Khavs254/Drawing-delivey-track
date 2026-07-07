@@ -52,6 +52,16 @@ header.topbar{position:sticky;top:0;z-index:50;background:var(--panel);border-bo
 .filter-bar select,.filter-bar input{background:#1a1a1a;border:1px solid var(--line2);color:var(--gold);padding:5px 8px;border-radius:5px;font-size:12px;}
 .filter-bar select{min-width:150px;}
 .filter-bar input{width:160px;}
+.ms-dropdown{position:relative;}
+.ms-dropdown-btn{background:#1a1a1a;border:1px solid var(--line2);color:var(--gold);padding:5px 8px;border-radius:5px;font-size:12px;min-width:170px;text-align:left;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:inline-block;}
+.ms-dropdown-btn:hover{border-color:var(--gold);}
+.ms-panel{display:none;position:absolute;top:calc(100% + 4px);left:0;background:var(--panel2);border:1px solid var(--line2);border-radius:6px;padding:6px;max-height:280px;min-width:220px;overflow-y:auto;z-index:60;box-shadow:0 6px 18px rgba(0,0,0,.4);}
+.ms-panel.show{display:block;}
+.ms-panel .ms-actions{display:flex;gap:6px;padding:2px 4px 6px;border-bottom:1px solid var(--line);margin-bottom:4px;}
+.ms-panel .ms-actions a{font-size:10.5px;color:var(--gold);cursor:pointer;text-decoration:underline;}
+.ms-panel label{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text);text-transform:none;letter-spacing:0;padding:4px 5px;cursor:pointer;border-radius:4px;margin:0;white-space:nowrap;}
+.ms-panel label:hover{background:var(--gold-dim);}
+.ms-panel input[type=checkbox]{width:auto;padding:0;}
 
 nav.tabs{display:flex;gap:2px;background:var(--panel);border-bottom:1px solid var(--line);padding:0 18px;overflow-x:auto;}
 nav.tabs button{background:transparent;border:none;border-bottom:2px solid transparent;color:var(--muted);padding:10px 16px;font-size:12.5px;cursor:pointer;white-space:nowrap;font-weight:600;letter-spacing:.3px;}
@@ -242,9 +252,10 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
   <select id="filterCategory" style="width:auto;" onchange="updateFilters()">
     <option value="">All Categories</option>
   </select>
-  <select id="filterSection" style="width:auto;" onchange="updateFilters()">
-    <option value="">All Sections / Profiles</option>
-  </select>
+  <div class="ms-dropdown" id="filterSectionWrap">
+    <button type="button" class="ms-dropdown-btn" id="filterSectionBtn" onclick="toggleSectionDropdown(event)">All Sections / Profiles ▾</button>
+    <div class="ms-panel" id="filterSectionPanel"></div>
+  </div>
   <input type="text" id="filterSearch" placeholder="Search description…" oninput="updateFilters()">
   <div class="spacer"></div>
   <div id="filterTotals" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;"></div>
@@ -292,6 +303,16 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
           <th style="width:26px;"></th>
         </tr></thead>
         <tbody id="gaBody"></tbody>
+        <tfoot>
+          <tr id="gaTotalsRow" style="background:#161616;font-weight:700;">
+            <td colspan="5" style="text-align:right;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;">Totals (filtered):</td>
+            <td id="gaTotalGaQty" style="text-align:center;color:var(--gold);"></td>
+            <td id="gaTotalPlanQty" style="text-align:center;color:var(--gold);"></td>
+            <td id="gaTotalElevQty" style="text-align:center;color:var(--gold);"></td>
+            <td id="gaTotal3dQty" style="text-align:center;color:var(--gold);"></td>
+            <td colspan="4"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     <div class="empty" id="gaEmpty" style="display:none;">
@@ -373,6 +394,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
       Create an issue record each time you send items to the workshop for fabrication. Link items to GA entries to enable clash detection.
     </p>
     <div id="issuesList"></div>
+    <div id="issuesTotalFooter" class="hint" style="margin-top:10px;text-align:right;font-weight:600;"></div>
     <div class="empty" id="issuesEmpty" style="display:none;">
       <div class="big">🏭</div>
       No issue records yet. Create one when you send items to the workshop.
@@ -448,6 +470,7 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
       <button class="btn" onclick="rematchDeliveryItems()" title="Re-run GA matching on every currently-unlinked delivery item using the GA schedule as it stands now">🔗 Re-match unlinked items to GA</button>
     </div>
     <div id="deliveryNotesList"></div>
+    <div id="deliveryTotalFooter" class="hint" style="margin-top:10px;text-align:right;font-weight:600;"></div>
     <div class="empty" id="deliveryNotesEmpty" style="display:none;">
       <div class="big">🚚</div>
       No delivery notes saved yet.
@@ -463,12 +486,25 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
       <div class="spacer"></div>
       <button class="btn solid" onclick="runClashCheck()">🔄 Run Clash Check</button>
       <button class="btn" onclick="runAiClashCheck()">🤖 Run AI Clash Check</button>
+      <button class="btn" onclick="auditExistingLinks()" title="Re-checks every already-linked issue/delivery item against the current (fixed) matching logic, and clears any link that no longer genuinely matches — e.g. old mislinks like VBR78 → VBR7 caused by a matching bug. Cleared items become visible again as unlinked, so you can review and re-link them correctly.">🩺 Audit Existing Links</button>
       <button class="btn" onclick="openClashPrintModal()">🖨 Print Clash Report</button>
     </div>
     <p class="hint" style="margin-top:-8px;margin-bottom:12px;">
       Compares: <b>GA Drawing Qty</b> → <b>Total Issued to Workshop</b> → <b>Total Delivered to Site</b>. 
       Highlights mismatches in red. The exact-match check runs automatically after every import; use <b>Run AI Clash Check</b> for AI-assisted matching of unlinked/ambiguous items (naming differences, likely duplicates, description mismatches) using your configured AI model.
     </p>
+
+    <div class="toolbar" style="margin-top:-4px;">
+      <label style="margin:0;">Show:</label>
+      <select id="clashGroupMode" onchange="renderClashCheck()" style="width:auto;min-width:260px;">
+        <option value="all">All items</option>
+        <option value="complete">✅ Matched — GA → Issued → Delivered</option>
+        <option value="issued_not_delivered">🚚 Issued to workshop, not yet delivered</option>
+        <option value="not_issued">📐 In GA, not yet issued to workshop</option>
+        <option value="not_delivered">📦 Not fully delivered to site (incl. partial)</option>
+        <option value="unlinked">⚠️ Issued/delivered but missing from GA part list</option>
+      </select>
+    </div>
 
     <!-- AI Clash Insights -->
     <div id="aiClashCard" style="display:none;margin-bottom:14px;">
@@ -495,6 +531,15 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
           <th>Status</th>
         </tr></thead>
         <tbody id="clashBody"></tbody>
+        <tfoot>
+          <tr id="clashTotalsRow" style="background:#161616;font-weight:700;">
+            <td style="text-align:right;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;">Totals (filtered):</td>
+            <td id="clashTotalGaQty" style="text-align:center;color:var(--gold);"></td>
+            <td id="clashTotalIssued" style="text-align:center;color:var(--gold);"></td>
+            <td id="clashTotalDelivered" style="text-align:center;color:var(--gold);"></td>
+            <td colspan="3" id="clashTotalCount" style="color:var(--muted);font-weight:400;font-size:11px;"></td>
+          </tr>
+        </tfoot>
       </table>
     </div>
     <div class="empty" id="clashEmpty">
@@ -570,6 +615,32 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="section-title">Clash Reports</div>
     <label class="print-opt"><input type="checkbox" id="pr_clashFull" checked><span>3-Stage Clash Check (full detail)</span></label>
     <label class="print-opt"><input type="checkbox" id="pr_clashOnly"><span>Clashes Only (items with mismatches)</span></label>
+
+    <div class="section-title">Clash Categories</div>
+    <label class="print-opt"><input type="checkbox" id="pr_catComplete"><span>✅ Matched — GA → Issued → Delivered</span></label>
+    <label class="print-opt"><input type="checkbox" id="pr_catIssuedNotDelivered"><span>🚚 Issued to workshop, not yet delivered</span></label>
+    <label class="print-opt"><input type="checkbox" id="pr_catNotIssued"><span>📐 In GA, not yet issued to workshop</span></label>
+    <label class="print-opt"><input type="checkbox" id="pr_catNotDelivered"><span>📦 Not fully delivered to site (incl. partial deliveries)</span></label>
+    <label class="print-opt"><input type="checkbox" id="pr_catUnlinked"><span>⚠️ Issued/delivered but missing from GA part list</span></label>
+    <div class="hint" style="margin-top:2px;">Category reports respect the currently active profile/category/search filter, and each includes its own quantity totals.</div>
+
+    <div class="section-title">Report Sign-off</div>
+    <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
+      <div style="flex:1;min-width:180px;">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Prepared by (name)</label>
+        <input type="text" id="pr_preparedBy" placeholder="e.g. Dennis" style="width:100%;" oninput="savePreparedBy()">
+      </div>
+      <div style="min-width:180px;">
+        <label style="display:block;font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;margin-bottom:4px;">Signature image</label>
+        <div style="display:flex;gap:6px;align-items:center;">
+          <button class="btn small" onclick="document.getElementById('pr_sigFile').click()">Upload…</button>
+          <button class="btn small" id="pr_sigRemove" style="display:none;" onclick="removeSignatureImage()">Remove</button>
+          <input type="file" id="pr_sigFile" accept="image/*" style="display:none;" onchange="handleSignatureUpload(event)">
+        </div>
+        <img id="pr_sigPreview" alt="" style="display:none;max-height:44px;max-width:170px;margin-top:6px;background:#fff;border-radius:4px;padding:2px;">
+      </div>
+    </div>
+    <div class="hint" style="margin-top:6px;">Shown at the bottom-left of every printed report. Saved on this device for future prints.</div>
 
     <div style="display:flex;gap:8px;margin-top:16px;">
       <button class="btn small" onclick="printOptSelectAll(true)">Select all</button>
@@ -812,53 +883,117 @@ function getAllSections(){
 
 function initFilters(){
   const catSel = document.getElementById('filterCategory');
-  const secSel = document.getElementById('filterSection');
-  if(!catSel || !secSel) return;
-  
+  const panel = document.getElementById('filterSectionPanel');
+  if(!catSel || !panel) return;
+
   const savedCat = catSel.value;
-  const savedSec = secSel.value;
-  
+
   catSel.innerHTML = '<option value="">All Categories</option>';
   CATEGORY_OPTIONS.forEach(([v,l]) => {
     catSel.innerHTML += `<option value="${v}">${l}</option>`;
   });
-  
-  secSel.innerHTML = '<option value="">All Sections / Profiles</option>';
-  getAllSections().forEach(s => {
-    secSel.innerHTML += `<option value="${esc(s)}">${esc(s)}</option>`;
-  });
-  
   catSel.value = savedCat || '';
-  secSel.value = savedSec || '';
+
+  // Rebuild the profile/section checklist, preserving current selections
+  const allSections = getAllSections();
+  const selected = new Set(activeFilters.sections);
+  // Drop selections for sections that no longer exist in the data
+  activeFilters.sections = activeFilters.sections.filter(s => allSections.includes(s));
+
+  if(allSections.length === 0){
+    panel.innerHTML = '<div class="hint" style="padding:6px;">No sections/profiles yet.</div>';
+  } else {
+    panel.innerHTML = `
+      <div class="ms-actions">
+        <a onclick="selectAllSectionFilters()">Select all</a>
+        <a onclick="clearSectionFilters()">Clear</a>
+      </div>
+      ${allSections.map(s => `
+        <label><input type="checkbox" class="ms-sec-cb" value="${esc(s)}" ${selected.has(s)?'checked':''}> ${esc(s)}</label>
+      `).join('')}
+    `;
+  }
+  updateSectionFilterBtnLabel();
+}
+
+function toggleSectionDropdown(e){
+  if(e) e.stopPropagation();
+  document.getElementById('filterSectionPanel').classList.toggle('show');
+}
+document.addEventListener('click', function(e){
+  const wrap = document.getElementById('filterSectionWrap');
+  const panel = document.getElementById('filterSectionPanel');
+  if(wrap && panel && !wrap.contains(e.target)) panel.classList.remove('show');
+});
+// Delegated listener on the panel itself (survives panel.innerHTML rebuilds in initFilters,
+// since the panel element is never replaced — only its contents). Reading e.target.value
+// directly means profile/section names with quotes, apostrophes, etc. can never break this,
+// unlike an inline onchange="..." string built by interpolating the value into JS source.
+document.getElementById('filterSectionPanel')?.addEventListener('change', function(e){
+  if(e.target && e.target.classList && e.target.classList.contains('ms-sec-cb')){
+    toggleSectionFilter(e.target.value, e.target.checked);
+  }
+});
+
+function toggleSectionFilter(sec, checked){
+  if(checked){
+    if(!activeFilters.sections.includes(sec)) activeFilters.sections.push(sec);
+  } else {
+    activeFilters.sections = activeFilters.sections.filter(s => s !== sec);
+  }
+  updateSectionFilterBtnLabel();
+  applyFilters();
+}
+
+function selectAllSectionFilters(){
+  activeFilters.sections = getAllSections();
+  document.querySelectorAll('#filterSectionPanel input[type=checkbox]').forEach(cb=>cb.checked=true);
+  updateSectionFilterBtnLabel();
+  applyFilters();
+}
+
+function clearSectionFilters(){
+  activeFilters.sections = [];
+  document.querySelectorAll('#filterSectionPanel input[type=checkbox]').forEach(cb=>cb.checked=false);
+  updateSectionFilterBtnLabel();
+  applyFilters();
+}
+
+function updateSectionFilterBtnLabel(){
+  const btn = document.getElementById('filterSectionBtn');
+  if(!btn) return;
+  const n = activeFilters.sections.length;
+  if(n === 0) btn.textContent = 'All Sections / Profiles ▾';
+  else if(n === 1) btn.textContent = activeFilters.sections[0] + ' ▾';
+  else btn.textContent = `${n} Profiles selected ▾`;
 }
 
 function updateFilters(){
-  activeFilters.categories = [];
-  activeFilters.sections = [];
-  activeFilters.search = '';
-  
+  // Called by the Category select and the Search input (section filter has its own handlers)
   const catSel = document.getElementById('filterCategory');
-  const secSel = document.getElementById('filterSection');
   const searchInp = document.getElementById('filterSearch');
-  
-  if(catSel && catSel.value) activeFilters.categories = [catSel.value];
-  if(secSel && secSel.value) activeFilters.sections = [secSel.value];
-  if(searchInp) activeFilters.search = searchInp.value.trim().toLowerCase();
-  
+
+  activeFilters.categories = (catSel && catSel.value) ? [catSel.value] : [];
+  activeFilters.search = searchInp ? searchInp.value.trim().toLowerCase() : '';
+
+  applyFilters();
+}
+
+function applyFilters(){
   renderAll();
   renderFilterTotals();
 }
 
 function clearFilters(){
   const catSel = document.getElementById('filterCategory');
-  const secSel = document.getElementById('filterSection');
   const searchInp = document.getElementById('filterSearch');
   if(catSel) catSel.value = '';
-  if(secSel) secSel.value = '';
   if(searchInp) searchInp.value = '';
+  document.querySelectorAll('#filterSectionPanel input[type=checkbox]').forEach(cb=>cb.checked=false);
+  document.getElementById('filterSectionPanel')?.classList.remove('show');
   activeFilters = { categories: [], sections: [], search: '' };
-  renderAll();
-  renderFilterTotals();
+  updateSectionFilterBtnLabel();
+  applyFilters();
 }
 
 function itemMatchesFilters(item, type='ga'){
@@ -879,7 +1014,14 @@ function itemMatchesFilters(item, type='ga'){
     section = item.section || '';
     if(item.gaItemId) {
       const ga = state.gaItems.find(g => g.id === item.gaItemId);
-      if(ga) category = ga.category || '';
+      if(ga) {
+        category = ga.category || '';
+        // Prefer the linked GA item's section as the source of truth — the raw text
+        // captured off an issue/delivery note (OCR, paste, excel) can differ slightly
+        // in spacing/formatting from the canonical GA section, which would otherwise
+        // make a linked item silently fail the section filter and show as 0.
+        if(ga.section) section = ga.section;
+      }
     }
   } else if(type === 'clash') {
     description = item.gaItem ? item.gaItem.description : (item.description || '');
@@ -908,7 +1050,7 @@ function renderFilterTotals(){
     <span class="pill" style="background:var(--gold-dim);color:var(--gold);border-color:var(--gold);">GA: <b>${totals.gaQty}</b></span>
     <span class="pill" style="background:rgba(88,166,255,.15);color:var(--blue);border-color:rgba(88,166,255,.3);">Issued: <b>${totals.issuedQty}</b></span>
     <span class="pill" style="background:rgba(63,185,80,.15);color:var(--green);border-color:rgba(63,185,80,.3);">Delivered: <b>${totals.deliveredQty}</b></span>
-    <span class="pill" style="background:rgba(248,81,73,.15);color:var(--red);border-color:rgba(248,81,73,.3);">Unlinked: <b>${totals.unlinkedQty}</b></span>
+    <span class="pill" style="background:rgba(248,81,73,.15);color:var(--red);border-color:rgba(248,81,73,.3);" title="Issued/delivered quantities whose items are missing from the GA part list">Not in GA: <b>${totals.unlinkedQty}</b></span>
     <span class="pill" style="background:rgba(188,140,255,.15);color:var(--purple);border-color:rgba(188,140,255,.3);">Net Diff: <b>${totals.netDiff > 0 ? '+' : ''}${totals.netDiff}</b></span>
   `;
 }
@@ -1021,10 +1163,20 @@ function switchTab(tab){
 /* ============================================================
    GA SCHEDULE TAB
    ============================================================ */
+function updateGATotalsRow(filtered){
+  const sum = (key) => filtered.reduce((s,it)=>s+(Number(it[key])||0),0);
+  const set = (id,val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  set('gaTotalGaQty', sum('gaQty'));
+  set('gaTotalPlanQty', sum('planQty'));
+  set('gaTotalElevQty', sum('elevationQty'));
+  set('gaTotal3dQty', sum('threeDQty'));
+}
 function renderGA(){
   const body = document.getElementById('gaBody');
   const empty = document.getElementById('gaEmpty');
   const filtered = state.gaItems.filter(it => itemMatchesFilters(it, 'ga'));
+  
+  updateGATotalsRow(filtered);
   
   if(filtered.length===0){ 
     empty.style.display='block'; 
@@ -1174,12 +1326,17 @@ function parseBulkGA(){
 function renderIssues(){
   const container = document.getElementById('issuesList');
   const empty = document.getElementById('issuesEmpty');
+  const footer = document.getElementById('issuesTotalFooter');
   
   const filteredRecords = state.workshopIssues.map(iss => {
     const filteredItems = iss.items.filter(it => itemMatchesFilters(it, 'issue'));
     if(filteredItems.length === 0) return null;
     return { ...iss, items: filteredItems };
   }).filter(Boolean);
+  
+  const grandTotalQty = filteredRecords.reduce((s,iss)=>s+iss.items.reduce((s2,it)=>s2+(Number(it.qtyIssued)||0),0), 0);
+  const grandTotalCount = filteredRecords.reduce((s,iss)=>s+iss.items.length, 0);
+  if(footer) footer.textContent = filteredRecords.length ? `Total (filtered): ${grandTotalCount} line item(s), ${grandTotalQty} piece(s) issued` : '';
   
   if(filteredRecords.length===0){ 
     empty.style.display='block'; 
@@ -1416,18 +1573,62 @@ function rematchIssueItems(){
   toast(matched>0 ? `Linked ${matched} of ${checked} unlinked item(s) to GA.` : `No matches found for ${checked} unlinked item(s) — descriptions may not line up with GA. Link manually via the dropdown.`);
 }
 
+// Re-validates every ALREADY-linked issue/delivery item against the current matching logic.
+// Older data can carry links made before a matching-bug fix (e.g. mark "VBR78" getting linked
+// to GA item "VBR7" purely because "VBR7" was a naive substring of "VBR78"). This doesn't try
+// to guess a replacement — it just clears any link that no longer genuinely matches, so the
+// item becomes visible again as unlinked/"Not in GA" for manual review and re-linking.
+function auditExistingLinks(){
+  if(!confirm('This checks every already-linked issue and delivery item against the current matching rules, and unlinks any that no longer genuinely match (e.g. old mislinks from before a matching-bug fix). Unlinked items stay fully visible for you to review and re-link manually. Continue?')) return;
+  let clearedIssue = 0, clearedDelivery = 0, checkedTotal = 0;
+  state.workshopIssues.forEach(iss=>{
+    iss.items.forEach(it=>{
+      if(!it.gaItemId) return;
+      checkedTotal++;
+      const ga = state.gaItems.find(g=>g.id===it.gaItemId);
+      if(!ga || !descriptionsMatch(it.description, ga.description)){
+        it.gaItemId = "";
+        clearedIssue++;
+      }
+    });
+  });
+  state.deliveryNotes.forEach(dn=>{
+    dn.items.forEach(it=>{
+      if(!it.gaItemId) return;
+      checkedTotal++;
+      const ga = state.gaItems.find(g=>g.id===it.gaItemId);
+      if(!ga || !descriptionsMatch(it.description, ga.description)){
+        it.gaItemId = "";
+        clearedDelivery++;
+      }
+    });
+  });
+  saveLocal();
+  renderAll();
+  autoFlagClashesForNewData();
+  const total = clearedIssue + clearedDelivery;
+  toast(total>0
+    ? `Audit complete — cleared ${total} mismatched link(s) (${clearedIssue} issued, ${clearedDelivery} delivered) out of ${checkedTotal} checked. Review them under Clash Check → "Not in GA (unlinked)".`
+    : `Audit complete — all ${checkedTotal} existing links still check out, nothing changed.`);
+}
+
 /* ============================================================
    DELIVERY NOTES TAB — OCR with Claude Vision
    ============================================================ */
 function renderDeliveryNotes(){
   const container = document.getElementById('deliveryNotesList');
   const empty = document.getElementById('deliveryNotesEmpty');
+  const footer = document.getElementById('deliveryTotalFooter');
   
   const filteredRecords = state.deliveryNotes.map(dn => {
     const filteredItems = dn.items.filter(it => itemMatchesFilters(it, 'delivery'));
     if(filteredItems.length === 0) return null;
     return { ...dn, items: filteredItems };
   }).filter(Boolean);
+  
+  const grandTotalQty = filteredRecords.reduce((s,dn)=>s+dn.items.reduce((s2,it)=>s2+(Number(it.qtyDelivered)||0),0), 0);
+  const grandTotalCount = filteredRecords.reduce((s,dn)=>s+dn.items.length, 0);
+  if(footer) footer.textContent = filteredRecords.length ? `Total (filtered): ${grandTotalCount} line item(s), ${grandTotalQty} piece(s) delivered` : '';
   
   if(filteredRecords.length===0){ 
     empty.style.display='block'; 
@@ -2259,7 +2460,7 @@ async function processIssueDrawingImage(file){
         const availableMarks = matched.markBreakdown.filter(m=>m.status==='ga' || !m.status).map(m=>m.mark);
         if(it.marks){
           const extractedMarks = it.marks.split(/[,;\s]+/).filter(Boolean);
-          markList = availableMarks.filter(m=>extractedMarks.some(em=>m.toLowerCase().includes(em.toLowerCase())||em.toLowerCase().includes(m.toLowerCase())));
+          markList = availableMarks.filter(m=>extractedMarks.some(em=>containsWholeToken(m.toLowerCase(), em.toLowerCase())||containsWholeToken(em.toLowerCase(), m.toLowerCase())));
         }
         if(markList.length===0) markList = [...availableMarks];
       }
@@ -2433,11 +2634,23 @@ async function callVisionAIForProviders(providers, systemPrompt, userText, media
 }
 
 function normWordsForMatch(s){ return (s||"").toLowerCase().replace(/[^a-z0-9]+/g,' ').trim().split(' ').filter(w=>w.length>2); }
+// Checks whether `needle` appears in `hay` as a whole token, not just anywhere in the
+// character stream. Plain .includes() would treat "VBR7" as contained in "VBR78" — a false
+// positive that cross-links unrelated marks (VBR7/VBR8/VBR9 profile groups swallowing every
+// VBR70-79/80-89/90-99 mark). A regex word-boundary check correctly rejects that: \b doesn't
+// land between two word characters ("7" and "8"), so "VBR7" only matches "VBR78" if it's
+// genuinely a separate word (e.g. separated by a space, dash, or punctuation).
+function containsWholeToken(hay, needle){
+  if(!hay || !needle) return false;
+  const escaped = needle.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  try{ return new RegExp('\\b' + escaped + '\\b', 'i').test(hay); }
+  catch(e){ return hay.includes(needle); }
+}
 function descriptionsMatch(a, b){
   const na = (a||"").toLowerCase().trim(), nb = (b||"").toLowerCase().trim();
   if(!na || !nb) return false;
   if(na === nb) return true;
-  if(na.includes(nb) || nb.includes(na)) return true;
+  if(containsWholeToken(na, nb) || containsWholeToken(nb, na)) return true;
   const wa = normWordsForMatch(na), wb = normWordsForMatch(nb);
   if(wa.length===0 || wb.length===0) return false;
   const overlap = wa.filter(w=>wb.includes(w));
@@ -2758,7 +2971,7 @@ function findBestGAMatch(description){
   const descLower = description.toLowerCase();
   let match = state.gaItems.find(ga=>ga.description.toLowerCase()===descLower);
   if(match) return match;
-  match = state.gaItems.find(ga=>ga.description.toLowerCase().includes(descLower) || descLower.includes(ga.description.toLowerCase()));
+  match = state.gaItems.find(ga=>containsWholeToken(ga.description.toLowerCase(), descLower) || containsWholeToken(descLower, ga.description.toLowerCase()));
   if(match) return match;
   const words = descLower.split(/\s+/).filter(w=>w.length>2);
   for(const ga of state.gaItems){
@@ -3183,6 +3396,26 @@ async function callTextAI(prompt, statusEl, label){
   }
 }
 
+function clashCategory(c){
+  if(c.isUnlinked) return 'unlinked';
+  if(c.totalIssued === 0) return 'not_issued';
+  if(c.totalDelivered === 0) return 'issued_not_delivered';
+  if(!c.issueClash && !c.deliveryClash) return 'complete';
+  return 'partial'; // issued & delivered both present, but a quantity mismatch somewhere
+}
+
+// Single source of truth for whether a clash row belongs to a display/print group.
+// 'not_delivered' = everything that still needs to reach site: any GA item whose
+// delivered-to-site total is below its GA requirement — whether it hasn't been issued
+// yet, is sitting fabricated in the workshop, or was only PARTIALLY delivered.
+// (Items missing from GA have their own 'unlinked' group since their requirement is unknown.)
+function matchesClashGroup(c, mode){
+  if(mode === 'all') return true;
+  if(mode === 'clashes_only') return c.issueClash || c.deliveryClash;
+  if(mode === 'not_delivered') return !c.isUnlinked && (Number(c.gaQty)||0) > (Number(c.totalDelivered)||0);
+  return clashCategory(c) === mode;
+}
+
 function renderClashCheck(){
   const clashes = computeClashes();
   const summary = document.getElementById('clashSummary');
@@ -3193,6 +3426,9 @@ function renderClashCheck(){
     empty.style.display='block';
     summary.innerHTML='';
     body.innerHTML='';
+    ['clashTotalGaQty','clashTotalIssued','clashTotalDelivered','clashTotalCount'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.textContent='';
+    });
     return;
   }
   empty.style.display='none';
@@ -3204,7 +3440,21 @@ function renderClashCheck(){
   const deliveryMismatch = clashes.filter(c=>c.deliveryClash && !c.isUnlinked).length;
   const unlinkedCount = clashes.filter(c=>c.isUnlinked && c.issueClash).length;
 
+  // The 3 stage-progress categories, plus a total-GA-quantity readout for whatever
+  // profile(s)/category/search is currently active in the filter bar.
+  const completeCount = clashes.filter(c=>clashCategory(c)==='complete').length;
+  const issuedNotDeliveredCount = clashes.filter(c=>clashCategory(c)==='issued_not_delivered').length;
+  const notIssuedCount = clashes.filter(c=>clashCategory(c)==='not_issued').length;
+  const notDeliveredItems = clashes.filter(c=>matchesClashGroup(c,'not_delivered'));
+  const notDeliveredCount = notDeliveredItems.length;
+  const outstandingQty = notDeliveredItems.reduce((s,c)=>s+Math.max(0,(Number(c.gaQty)||0)-(Number(c.totalDelivered)||0)),0);
+  const totalGaQtyFiltered = clashes.filter(c=>!c.isUnlinked).reduce((s,c)=>s+(Number(c.gaQty)||0),0);
+
   summary.innerHTML = `
+    <div class="clash-card ok">
+      <div class="label">Total GA Qty (active profiles)</div>
+      <div class="value" style="color:var(--gold);">${totalGaQtyFiltered}</div>
+    </div>
     <div class="clash-card ${clashCount===0?'ok':'clash'}">
       <div class="label">Items with Clash</div>
       <div class="value" style="color:var(${clashCount===0?'--green':'--red'});">${clashCount}</div>
@@ -3226,12 +3476,32 @@ function renderClashCheck(){
       <div class="value" style="color:var(${deliveryMismatch>0?'--red':'--green'});">${deliveryMismatch}</div>
     </div>
     <div class="clash-card ${unlinkedCount>0?'clash':'ok'}">
-      <div class="label">Unlinked Items</div>
+      <div class="label">⚠️ Missing from GA (issued, not in part list)</div>
       <div class="value" style="color:var(${unlinkedCount>0?'--red':'--green'});">${unlinkedCount}</div>
+    </div>
+    <div class="clash-card ok">
+      <div class="label">✅ Matched (GA→Issued→Delivered)</div>
+      <div class="value" style="color:var(--green);">${completeCount}</div>
+    </div>
+    <div class="clash-card ${issuedNotDeliveredCount>0?'warn':'ok'}">
+      <div class="label">🚚 Issued, Not Delivered</div>
+      <div class="value" style="color:var(${issuedNotDeliveredCount>0?'--amber':'--green'});">${issuedNotDeliveredCount}</div>
+    </div>
+    <div class="clash-card ${notIssuedCount>0?'warn':'ok'}">
+      <div class="label">📐 In GA, Not Issued</div>
+      <div class="value" style="color:var(${notIssuedCount>0?'--amber':'--green'});">${notIssuedCount}</div>
+    </div>
+    <div class="clash-card ${notDeliveredCount>0?'warn':'ok'}">
+      <div class="label">📦 Not Fully Delivered (incl. partial)</div>
+      <div class="value" style="color:var(${notDeliveredCount>0?'--amber':'--green'});">${notDeliveredCount}</div>
+      <div class="label" style="margin-top:2px;">${outstandingQty} pc(s) outstanding</div>
     </div>
   `;
 
-  body.innerHTML = clashes.map(c=>{
+  const groupMode = document.getElementById('clashGroupMode')?.value || 'all';
+  const displayClashes = clashes.filter(c => matchesClashGroup(c, groupMode));
+
+  body.innerHTML = displayClashes.map(c=>{
     const issueBadge = c.isUnlinked 
       ? (c.totalIssued > 0 ? '<span class="badge clash">Not in GA</span>' : '<span class="badge neutral">N/A</span>')
       : (!c.gaQty ? '<span class="badge neutral">No GA qty</span>' :
@@ -3251,7 +3521,7 @@ function renderClashCheck(){
     const hasMarks = !c.isUnlinked && c.markStatus && c.markStatus.all && c.markStatus.all.length > 0;
     const markDetails = hasMarks ? renderClashMarkStatus(c.markStatus) : '';
     const descCell = c.isUnlinked 
-      ? `${esc(c.description)}<br><span class="mono" style="font-size:11px;color:var(--muted2);">${esc(c.section)}</span><br><span class="badge warn">UNLINKED</span>`
+      ? `${esc(c.description)}<br><span class="mono" style="font-size:11px;color:var(--muted2);">${esc(c.section)}</span><br><span class="badge warn">NOT IN GA PART LIST</span>`
       : `${esc(c.gaItem.description)}<br><span class="mono" style="font-size:11px;color:var(--muted2);">${esc(c.gaItem.section)}</span>`;
     return `
       <tr ${rowClass}>
@@ -3266,6 +3536,12 @@ function renderClashCheck(){
       ${markDetails?`<tr><td colspan="7" style="padding:0;border-bottom:1px solid var(--line);"><div style="padding:8px 12px 10px 16px;background:#0f1923;">${markDetails}</div></td></tr>`:''}
     `;
   }).join('');
+
+  const setText = (id,val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  setText('clashTotalGaQty', displayClashes.filter(c=>!c.isUnlinked).reduce((s,c)=>s+(Number(c.gaQty)||0),0));
+  setText('clashTotalIssued', displayClashes.reduce((s,c)=>s+(Number(c.totalIssued)||0),0));
+  setText('clashTotalDelivered', displayClashes.reduce((s,c)=>s+(Number(c.totalDelivered)||0),0));
+  setText('clashTotalCount', `${displayClashes.length} row(s) shown`);
 }
 
 function renderClashMarkStatus(markStatus){
@@ -3283,8 +3559,21 @@ function renderClashMarkStatus(markStatus){
 /* ============================================================
    PRINT REPORTS
    ============================================================ */
-function openPrintModal(){ document.getElementById('printModal').classList.add('show'); }
-function openClashPrintModal(){ document.getElementById('printModal').classList.add('show'); }
+function openPrintModal(){ refreshSignoffUI(); document.getElementById('printModal').classList.add('show'); }
+function openClashPrintModal(){
+  // Pre-tick the print option matching whatever category is currently on screen,
+  // so "Print Clash Report" prints what you're looking at by default.
+  const mode = document.getElementById('clashGroupMode')?.value || 'all';
+  const map = { all:'pr_clashFull', complete:'pr_catComplete', issued_not_delivered:'pr_catIssuedNotDelivered', not_issued:'pr_catNotIssued', not_delivered:'pr_catNotDelivered', unlinked:'pr_catUnlinked' };
+  const targetId = map[mode];
+  if(targetId){
+    ['pr_clashFull','pr_clashOnly','pr_catComplete','pr_catIssuedNotDelivered','pr_catNotIssued','pr_catNotDelivered','pr_catUnlinked'].forEach(id=>{
+      const el = document.getElementById(id); if(el) el.checked = (id === targetId);
+    });
+  }
+  document.getElementById('printModal').classList.add('show');
+  refreshSignoffUI();
+}
 function printOptSelectAll(val){
   document.querySelectorAll('#printModal .print-opt input[type=checkbox]').forEach(cb=>cb.checked=val);
 }
@@ -3297,35 +3586,90 @@ function getPrintSelections(){
     deliverySummary: on('pr_deliverySummary'),
     clashFull: on('pr_clashFull'),
     clashOnly: on('pr_clashOnly'),
+    catComplete: on('pr_catComplete'),
+    catIssuedNotDelivered: on('pr_catIssuedNotDelivered'),
+    catNotIssued: on('pr_catNotIssued'),
+    catNotDelivered: on('pr_catNotDelivered'),
+    catUnlinked: on('pr_catUnlinked'),
   };
 }
 
+/* ---- Report sign-off (prepared-by name + signature image), persisted locally ---- */
+const SIGN_KEYS = { name:'rqt_preparedBy', img:'rqt_signatureImg' };
+function savePreparedBy(){
+  // Only persist while the print modal is open — its opener populates the input first
+  // (refreshSignoffUI). Writing outside that context could clobber the saved name with "".
+  const modal = document.getElementById('printModal');
+  if(!modal || !modal.classList.contains('show')) return;
+  const el = document.getElementById('pr_preparedBy');
+  if(el) localStorage.setItem(SIGN_KEYS.name, el.value.trim());
+}
+function handleSignatureUpload(e){
+  const file = e.target.files && e.target.files[0];
+  if(!file) return;
+  if(file.size > 400*1024){ toast('Signature image too large — please use one under 400 KB.'); e.target.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try{ localStorage.setItem(SIGN_KEYS.img, reader.result); }
+    catch(err){ toast('Could not save signature image (storage full).'); return; }
+    refreshSignoffUI();
+    toast('Signature saved.');
+  };
+  reader.readAsDataURL(file);
+  e.target.value='';
+}
+function removeSignatureImage(){
+  localStorage.removeItem(SIGN_KEYS.img);
+  refreshSignoffUI();
+}
+function refreshSignoffUI(){
+  const nameEl = document.getElementById('pr_preparedBy');
+  if(nameEl && !nameEl.value) nameEl.value = localStorage.getItem(SIGN_KEYS.name) || '';
+  const img = localStorage.getItem(SIGN_KEYS.img) || '';
+  const prev = document.getElementById('pr_sigPreview');
+  const rm = document.getElementById('pr_sigRemove');
+  if(prev){ prev.src = img; prev.style.display = img ? 'block' : 'none'; }
+  if(rm) rm.style.display = img ? 'inline-block' : 'none';
+}
+
+/* ---- Interactive print preview with click-to-page-break ---- */
 function printBuiltDocument(){
   const sel = getPrintSelections();
   const anySelected = Object.values(sel).some(Boolean);
   if(!anySelected){ toast('Select at least one section to print.'); return; }
+  savePreparedBy();
   closeModal('printModal');
   const html = buildPrintDocument(sel);
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0'; iframe.style.bottom = '0';
-  iframe.style.width = '0'; iframe.style.height = '0';
-  iframe.style.border = '0';
-  document.body.appendChild(iframe);
-  const doc = iframe.contentWindow.document;
+
+  let ov = document.getElementById('printPreviewOverlay');
+  if(ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = 'printPreviewOverlay';
+  ov.className = 'no-print';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:2000;display:flex;flex-direction:column;';
+  ov.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);flex-wrap:wrap;">
+      <b style="color:var(--gold);white-space:nowrap;">🖨 Print Preview</b>
+      <span class="hint" style="flex:1;min-width:220px;">Click any table row or section heading to push it to the top of the next page (a red dashed line marks the break — click again to undo).</span>
+      <button class="btn small" onclick="printPreviewClearBreaks()">Clear all breaks</button>
+      <button class="btn solid" onclick="printPreviewPrint()">🖨 Print</button>
+      <button class="btn" onclick="document.getElementById('printPreviewOverlay').remove()">✕ Close</button>
+    </div>
+    <iframe id="printPreviewFrame" style="flex:1;border:0;background:#e8e8e8;"></iframe>`;
+  document.body.appendChild(ov);
+  const doc = document.getElementById('printPreviewFrame').contentWindow.document;
   doc.open(); doc.write(html); doc.close();
-  const cleanup = () => { setTimeout(()=>{ if(iframe.parentNode) iframe.parentNode.removeChild(iframe); }, 500); };
-  iframe.onload = () => {
-    setTimeout(()=>{
-      try{
-        iframe.contentWindow.focus();
-        iframe.contentWindow.print();
-      }catch(e){
-        toast('Could not open print dialog — try again.');
-      }
-      cleanup();
-    }, 150);
-  };
+}
+function printPreviewPrint(){
+  const f = document.getElementById('printPreviewFrame');
+  if(!f) return;
+  try{ f.contentWindow.focus(); f.contentWindow.print(); }
+  catch(e){ toast('Could not open print dialog — try again.'); }
+}
+function printPreviewClearBreaks(){
+  const f = document.getElementById('printPreviewFrame');
+  if(!f) return;
+  f.contentWindow.document.querySelectorAll('.pb-before').forEach(el=>el.classList.remove('pb-before'));
 }
 
 function buildPrintDocument(sel){
@@ -3335,8 +3679,13 @@ function buildPrintDocument(sel){
   if(sel.gaSchedule) bodyHtml += printGAScheduleHtml();
   if(sel.issueSummary) bodyHtml += printIssueSummaryHtml();
   if(sel.deliverySummary) bodyHtml += printDeliverySummaryHtml();
-  if(sel.clashFull) bodyHtml += printClashHtml(false);
-  if(sel.clashOnly) bodyHtml += printClashHtml(true);
+  if(sel.clashFull) bodyHtml += printClashHtml('all');
+  if(sel.clashOnly) bodyHtml += printClashHtml('clashes_only');
+  if(sel.catComplete) bodyHtml += printClashHtml('complete');
+  if(sel.catIssuedNotDelivered) bodyHtml += printClashHtml('issued_not_delivered');
+  if(sel.catNotIssued) bodyHtml += printClashHtml('not_issued');
+  if(sel.catNotDelivered) bodyHtml += printClashHtml('not_delivered');
+  if(sel.catUnlinked) bodyHtml += printClashHtml('unlinked');
 
   const headerHtml = `
   <div class="doc-header">
@@ -3347,6 +3696,16 @@ function buildPrintDocument(sel){
       <br>Printed: ${displayDate(fmtISO(new Date()))}
     </div>
   </div>`;
+
+  const preparedBy = localStorage.getItem(SIGN_KEYS.name) || '';
+  const sigImg = localStorage.getItem(SIGN_KEYS.img) || '';
+  const signHtml = (preparedBy || sigImg) ? `
+  <div class="sign-block">
+    ${sigImg?`<img class="sign-img" src="${sigImg}" alt="Signature">`:''}
+    <div class="sign-line"></div>
+    <div class="sign-name">${esc(preparedBy)}</div>
+    <div class="sign-sub">Prepared &amp; signed — ${displayDate(fmtISO(new Date()))}</div>
+  </div>` : '';
 
   return `<!DOCTYPE html>
 <html><head><meta charset="UTF-8">
@@ -3363,10 +3722,13 @@ function buildPrintDocument(sel){
   h2{font-size:13px;margin:22px 0 8px;color:var(--navy);text-transform:uppercase;letter-spacing:.5px;border-bottom:2px solid var(--blue);padding-bottom:5px;}
   h2:first-of-type{margin-top:4px;}
   table{width:100%;border-collapse:collapse;margin-bottom:10px;}
+  thead{display:table-header-group;}
   th,td{border:1px solid var(--line);padding:5px 7px;text-align:left;font-size:11px;}
   th{background:var(--navy);color:#fff;text-transform:uppercase;font-size:9px;letter-spacing:.3px;}
   tbody tr:nth-child(even){background:#eaf2fb;}
   tr{page-break-inside:avoid;}
+  .summary-box,.sign-block{page-break-inside:avoid;break-inside:avoid;}
+  .pb-before{page-break-before:always;break-before:page;}
   .badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.3px;}
   .badge.ok{background:rgba(63,185,80,.15);color:#1a7d2e;border:1px solid rgba(63,185,80,.3);}
   .badge.warn{background:rgba(210,153,34,.15);color:#8a6d15;border:1px solid rgba(210,153,34,.3);}
@@ -3374,24 +3736,50 @@ function buildPrintDocument(sel){
   .badge.neutral{background:rgba(139,148,158,.15);color:#555;border:1px solid rgba(139,148,158,.3);}
   .badge.info{background:rgba(88,166,255,.15);color:#1c5ea8;border:1px solid rgba(88,166,255,.3);}
   .clash-row{background:rgba(248,81,73,.06);}
-  .doc-footer{margin-top:24px;padding-top:8px;border-top:1px solid var(--line);color:#7488a3;font-size:9.5px;text-align:center;}
+  .sign-block{margin-top:36px;width:260px;text-align:left;}
+  .sign-img{max-height:60px;max-width:220px;display:block;margin-bottom:2px;}
+  .sign-line{border-bottom:1.5px solid var(--ink);width:220px;margin-bottom:4px;}
+  .sign-name{font-weight:700;font-size:12px;}
+  .sign-sub{font-size:9.5px;color:#7488a3;}
+  .doc-footer{margin-top:18px;padding-top:8px;border-top:1px solid var(--line);color:#7488a3;font-size:9.5px;text-align:center;}
   .summary-box{display:flex;gap:12px;margin-bottom:14px;flex-wrap:wrap;}
   .summary-item{background:#f5f8fc;border:1px solid var(--line);border-radius:6px;padding:10px 16px;text-align:center;min-width:100px;}
   .summary-item .val{font-size:20px;font-weight:700;color:var(--navy);}
   .summary-item .lbl{font-size:9px;color:#7488a3;text-transform:uppercase;letter-spacing:.5px;}
+  @media screen{
+    body{background:#e8e8e8;}
+    .page{background:#fff;max-width:960px;margin:14px auto;padding:16px 20px;box-shadow:0 2px 14px rgba(0,0,0,.25);}
+    tbody tr{cursor:pointer;}
+    tbody tr:hover td{outline:1.5px dashed var(--blue);outline-offset:-1.5px;}
+    h2{cursor:pointer;}
+    h2:hover{outline:1.5px dashed var(--blue);outline-offset:2px;}
+    tr.pb-before td{border-top:4px dashed #c0392b !important;}
+    h2.pb-before{border-top:4px dashed #c0392b;padding-top:10px;}
+    tr.pb-before td:first-child::before, h2.pb-before::before{content:"⤵ NEW PAGE ";color:#c0392b;font-size:9px;font-weight:700;letter-spacing:.5px;margin-right:4px;}
+  }
   @media print{
-    .page{margin:6mm 8mm;}
+    .page{margin:6mm 8mm;box-shadow:none;max-width:none;padding:0;}
     .doc-header{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     th{-webkit-print-color-adjust:exact;print-color-adjust:exact;}
     tbody tr:nth-child(even){-webkit-print-color-adjust:exact;print-color-adjust:exact;}
+    tr.pb-before td{border-top:1px solid var(--line) !important;}
   }
 </style>
 </head><body>
 <div class="page">
   ${headerHtml}
   ${bodyHtml || '<p style="color:#888;">No sections selected.</p>'}
+  ${signHtml}
   <div class="doc-footer">Ropa Engineering Co. Ltd — Quantity Tracker &amp; Delivery Control</div>
 </div>
+<script>
+// Click any body row or section heading to toggle a manual page break before it.
+document.addEventListener('click', function(e){
+  var t = e.target.closest('tbody tr, h2');
+  if(!t) return;
+  t.classList.toggle('pb-before');
+});
+<\/script>
 </body></html>`;
 }
 
@@ -3464,33 +3852,69 @@ function printDeliverySummaryHtml(){
   return html;
 }
 
-function printClashHtml(onlyClashes){
+const CLASH_PRINT_MODES = {
+  all:                  { title: '3-Stage Clash Check — GA vs Issued vs Delivered', emptyLabel: 'items' },
+  clashes_only:         { title: 'Clash Report — Items with Mismatches Only',       emptyLabel: 'clashes' },
+  complete:             { title: 'Matched Items — GA → Issued → Delivered',         emptyLabel: 'fully matched items' },
+  issued_not_delivered: { title: 'Issued to Workshop — Not Yet Delivered to Site',  emptyLabel: 'issued-but-undelivered items' },
+  not_issued:           { title: 'In GA — Not Yet Issued to Workshop',              emptyLabel: 'unissued GA items' },
+  not_delivered:        { title: 'Not Fully Delivered to Site — Outstanding Items (incl. Partial Deliveries)', emptyLabel: 'items with outstanding deliveries' },
+  unlinked:             { title: 'Issued/Delivered but Missing from GA Part List — Follow-up Required', emptyLabel: 'items missing from GA' },
+};
+
+function printClashHtml(mode){
+  // Back-compat: old boolean signature (false = full, true = clashes only)
+  if(mode === true) mode = 'clashes_only';
+  if(mode === false || mode === undefined) mode = 'all';
+  const cfg = CLASH_PRINT_MODES[mode] || CLASH_PRINT_MODES.all;
+
   const clashes = computeClashes();
-  const filtered = onlyClashes ? clashes.filter(c=>c.issueClash||c.deliveryClash) : clashes;
-  if(filtered.length===0) return `<h2>${onlyClashes?'Clashes Only':'3-Stage Clash Check'}</h2><p style="color:#888;">No ${onlyClashes?'clashes':'items'} to display.</p>`;
+  const filtered = clashes.filter(c => matchesClashGroup(c, mode));
 
-  const clashCount = clashes.filter(c=>c.issueClash||c.deliveryClash).length;
-  const okCount = clashes.length - clashCount;
+  // Note which filter-bar selection the report reflects, so a printed page is self-explanatory.
+  const filterNote = (activeFilters.sections.length || activeFilters.categories.length || activeFilters.search)
+    ? `<p style="font-size:11px;color:#555;margin:2px 0 8px;">Filtered view — ${
+        [activeFilters.sections.length ? 'Profiles: '+activeFilters.sections.map(esc).join(', ') : '',
+         activeFilters.categories.length ? 'Category: '+activeFilters.categories.map(esc).join(', ') : '',
+         activeFilters.search ? 'Search: "'+esc(activeFilters.search)+'"' : ''].filter(Boolean).join(' · ')
+      }</p>`
+    : '';
 
-  let html = `<h2>${onlyClashes?'Clash Report — Items with Mismatches Only':'3-Stage Clash Check — GA vs Issued vs Delivered'}</h2>`;
+  if(filtered.length===0) return `<h2>${cfg.title}</h2>${filterNote}<p style="color:#888;">No ${cfg.emptyLabel} to display.</p>`;
+
+  const clashCount = filtered.filter(c=>c.issueClash||c.deliveryClash).length;
+  const okCount = filtered.length - clashCount;
+  const totGa = filtered.filter(c=>!c.isUnlinked).reduce((s,c)=>s+(Number(c.gaQty)||0),0);
+  const totIssued = filtered.reduce((s,c)=>s+(Number(c.totalIssued)||0),0);
+  const totDelivered = filtered.reduce((s,c)=>s+(Number(c.totalDelivered)||0),0);
+  const showOutstanding = mode === 'not_delivered';
+  const outstandingOf = c => Math.max(0,(Number(c.gaQty)||0)-(Number(c.totalDelivered)||0));
+  const totOutstanding = filtered.filter(c=>!c.isUnlinked).reduce((s,c)=>s+outstandingOf(c),0);
+
+  let html = `<h2>${cfg.title}</h2>${filterNote}`;
   html += `<div class="summary-box">
-    <div class="summary-item"><div class="val">${clashes.length}</div><div class="lbl">Total Items</div></div>
+    <div class="summary-item"><div class="val">${filtered.length}</div><div class="lbl">Items</div></div>
+    <div class="summary-item"><div class="val">${totGa}</div><div class="lbl">GA Qty</div></div>
+    <div class="summary-item"><div class="val">${totIssued}</div><div class="lbl">Issued</div></div>
+    <div class="summary-item"><div class="val">${totDelivered}</div><div class="lbl">Delivered</div></div>
+    ${showOutstanding?`<div class="summary-item"><div class="val" style="color:#c0392b;">${totOutstanding}</div><div class="lbl">Outstanding</div></div>`:''}
     <div class="summary-item"><div class="val" style="color:${clashCount>0?'#c0392b':'#1a7d2e'};">${clashCount}</div><div class="lbl">With Clash</div></div>
     <div class="summary-item"><div class="val" style="color:#1a7d2e;">${okCount}</div><div class="lbl">OK</div></div>
   </div>`;
   html += `<table>
-    <thead><tr><th>Description</th><th>Section</th><th>GA Qty</th><th>Issued</th><th>Delivered</th><th>Issue Status</th><th>Delivery Status</th></tr></thead>
+    <thead><tr><th>Description</th><th>Section</th><th>GA Qty</th><th>Issued</th><th>Delivered</th>${showOutstanding?'<th>Outstanding</th>':''}<th>Issue Status</th><th>Delivery Status</th></tr></thead>
     <tbody>`;
   for(const c of filtered){
     if(c.isUnlinked) {
       const issueStatus = c.totalIssued > 0 ? `Not in GA — issued ${c.totalIssued}` : 'N/A';
       const deliveryStatus = c.totalIssued===0 ? 'N/A' : c.deliveryClash ? (c.deliveryDiff>0?`Over by ${c.deliveryDiff}`:`Short by ${Math.abs(c.deliveryDiff)}`) : 'Match';
       html += `<tr class="clash-row">
-        <td>${esc(c.description)}<br><span style="font-size:10px;color:#555;">UNLINKED</span></td>
+        <td>${esc(c.description)}<br><span style="font-size:10px;color:#555;">NOT IN GA PART LIST</span></td>
         <td>${esc(c.section)}</td>
         <td style="text-align:center;font-weight:700;">0</td>
         <td style="text-align:center;">${c.totalIssued}</td>
         <td style="text-align:center;">${c.totalDelivered}</td>
+        ${showOutstanding?'<td style="text-align:center;">—</td>':''}
         <td>${issueStatus}</td>
         <td>${deliveryStatus}</td>
       </tr>`;
@@ -3508,11 +3932,20 @@ function printClashHtml(onlyClashes){
         <td style="text-align:center;font-weight:700;">${c.gaQty}</td>
         <td style="text-align:center;">${c.totalIssued}</td>
         <td style="text-align:center;">${c.totalDelivered}</td>
+        ${showOutstanding?`<td style="text-align:center;font-weight:700;color:#c0392b;">${outstandingOf(c)}</td>`:''}
         <td>${issueStatus}</td>
         <td>${deliveryStatus}</td>
       </tr>`;
     }
   }
+  html += `<tr style="font-weight:700;background:#eef3fa;border-top:2px solid #1c5ea8;">
+    <td colspan="2" style="text-align:right;">TOTALS:</td>
+    <td style="text-align:center;">${totGa}</td>
+    <td style="text-align:center;">${totIssued}</td>
+    <td style="text-align:center;">${totDelivered}</td>
+    ${showOutstanding?`<td style="text-align:center;color:#c0392b;">${totOutstanding}</td>`:''}
+    <td colspan="2"></td>
+  </tr>`;
   html += '</tbody></table>';
   return html;
 }
@@ -3759,7 +4192,9 @@ function toast(msg){
   window._toastTimer = setTimeout(()=>t.classList.remove('show'), 3200);
 }
 function renderAll(){
-  renderHeader(); renderGA(); renderIssues(); renderDeliveryNotes(); renderFilterTotals(); initFilters();
+  const safe = (fn) => { try{ fn(); }catch(e){ console.error(e); } };
+  safe(renderHeader); safe(renderGA); safe(renderIssues); safe(renderDeliveryNotes); safe(renderClashCheck);
+  safe(renderFilterTotals); safe(initFilters);
 }
 
 /* ============================================================
