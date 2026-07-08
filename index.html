@@ -216,6 +216,18 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 .mark-chk{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:11px;cursor:pointer;}
 .mark-chk:hover{background:#222;}
 .mark-chk input{width:auto;margin:0;}
+
+/* ---- Planning tabs (Workshop Plan / Onsite Erection) ---- */
+.gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.gantt-label{width:190px;min-width:190px;font-size:11px;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.gantt-track{flex:1;position:relative;height:20px;background:#151b23;border-radius:4px;border:1px solid var(--line);}
+.gantt-bar{position:absolute;top:1px;bottom:1px;border-radius:3px;font-size:9.5px;color:#08131f;font-weight:700;display:flex;align-items:center;justify-content:center;min-width:14px;overflow:hidden;}
+.week-header{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:10px;color:var(--muted);}
+.badge.pending{background:rgba(139,148,158,.15);color:var(--slate);border:1px solid rgba(139,148,158,.3);}
+.badge.in_progress{background:rgba(88,166,255,.15);color:var(--blue);border:1px solid rgba(88,166,255,.3);}
+.badge.completed{background:rgba(63,185,80,.15);color:var(--green);border:1px solid rgba(63,185,80,.3);}
+.badge.behind{background:rgba(248,81,73,.15);color:var(--red);border:1px solid rgba(248,81,73,.3);}
+.badge.on_hold{background:rgba(210,153,34,.15);color:var(--amber);border:1px solid rgba(210,153,34,.3);}
 </style>
 </head>
 <body>
@@ -267,6 +279,8 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
   <button class="tab-btn" data-tab="issue" onclick="switchTab('issue')">2 · Issue to Workshop</button>
   <button class="tab-btn" data-tab="delivery" onclick="switchTab('delivery')">3 · Delivery Notes (OCR)</button>
   <button class="tab-btn" data-tab="clash" onclick="switchTab('clash')">4 · Clash Check</button>
+  <button class="tab-btn" data-tab="wplan" onclick="switchTab('wplan')">5 · Workshop Plan</button>
+  <button class="tab-btn" data-tab="oplan" onclick="switchTab('oplan')">6 · Onsite Erection</button>
 </nav>
 
 <main>
@@ -549,6 +563,106 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
   </div>
 </section>
 
+<!-- ===================== TAB 5: WORKSHOP FABRICATION PLAN ===================== -->
+<section class="panel" id="panel-wplan">
+  <div class="card">
+    <div class="toolbar">
+      <h3 style="border:none;margin:0;">Workshop Fabrication Plan — Issued Items</h3>
+      <div class="spacer"></div>
+      <button class="btn" onclick="syncPlanFromTracker('workshop')" title="Pull every GA item into the plan and set its Workshop Plan Qty to the total quantity issued to the workshop so far">🔗 Sync issued quantities from tracker</button>
+      <button class="btn" onclick="document.getElementById('wplanExcelInput').click()" title="Import plan items from an Excel/CSV file (Description / Section / Qty columns)">📄 Import from Excel</button>
+      <input type="file" id="wplanExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importPlanExcel('workshop', event)">
+      <button class="btn" onclick="addPlanItem('workshop')">＋ Add Item</button>
+      <button class="btn solid" onclick="autoSchedulePlan('workshop')">📅 Auto-schedule Workshop</button>
+    </div>
+    <p class="hint" style="margin-top:-4px;">
+      Plans fabrication of items <b>issued to the workshop</b> (Tab 2). Sync pulls live issued quantities per GA item; you can also import from a file or add rows manually. Auto-schedule sequences items from the start date using Ropa workshop production rates.
+    </p>
+    <div class="grid cols-4" style="margin-bottom:10px;">
+      <div class="field"><label>Workshop Start Date</label><input type="date" id="plan_wStartDate" onchange="updPlanParam('wStartDate', this.value)"></div>
+      <div class="field"><label>Working Days / Week</label>
+        <select id="plan_wdpw" onchange="updPlanParam('workingDaysPerWeek', Number(this.value))">
+          <option value="5">5 (Mon–Fri)</option><option value="6" selected>6 (Mon–Sat)</option><option value="7">7</option>
+        </select>
+      </div>
+    </div>
+    <div class="clash-summary" id="wplanStats"></div>
+  </div>
+  <div class="card">
+    <h3>Workshop Schedule (Gantt)</h3>
+    <div id="wplanGantt"></div>
+  </div>
+  <div class="card">
+    <h3>Workshop Progress by Item</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Description</th><th>Section</th><th>Plan Qty</th><th>Issued (live)</th><th>Output/day</th><th>Complexity</th><th>Start</th><th>End</th><th>Dur (d)</th><th>Status</th><th>Actual</th><th></th></tr></thead>
+      <tbody id="wplanBody"></tbody>
+      <tfoot><tr id="wplanTotalsRow" style="background:#161616;font-weight:700;">
+        <td colspan="2" style="text-align:right;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;">Totals:</td>
+        <td id="wplanTotQty" style="text-align:center;color:var(--gold);"></td>
+        <td id="wplanTotIssued" style="text-align:center;color:var(--gold);"></td>
+        <td colspan="6"></td>
+        <td id="wplanTotActual" style="text-align:center;color:var(--gold);"></td>
+        <td></td>
+      </tr></tfoot>
+    </table></div>
+    <div class="empty" id="wplanEmpty" style="display:none;">
+      <div class="big">🏭</div>
+      No plan items yet. Sync from the tracker, import a file, or add items manually.
+    </div>
+  </div>
+</section>
+
+<!-- ===================== TAB 6: ONSITE ERECTION PLAN ===================== -->
+<section class="panel" id="panel-oplan">
+  <div class="card">
+    <div class="toolbar">
+      <h3 style="border:none;margin:0;">Onsite Erection Plan — Delivered Items</h3>
+      <div class="spacer"></div>
+      <button class="btn" onclick="syncPlanFromTracker('onsite')" title="Pull every GA item into the plan and set its Onsite Plan Qty to the total quantity delivered to site so far">🔗 Sync delivered quantities from tracker</button>
+      <button class="btn" onclick="document.getElementById('oplanExcelInput').click()" title="Import plan items from an Excel/CSV file (Description / Section / Qty columns)">📄 Import from Excel</button>
+      <input type="file" id="oplanExcelInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="importPlanExcel('onsite', event)">
+      <button class="btn" onclick="addPlanItem('onsite')">＋ Add Item</button>
+      <button class="btn solid" onclick="autoSchedulePlan('onsite')">📅 Auto-schedule Erection</button>
+    </div>
+    <p class="hint" style="margin-top:-4px;">
+      Plans erection of items <b>delivered to site</b> (Tab 3). Sync pulls live delivered quantities per GA item. Auto-schedule sequences items from the erection start date using Ropa onsite erection rates.
+    </p>
+    <div class="grid cols-4" style="margin-bottom:10px;">
+      <div class="field"><label>Erection Start Date</label><input type="date" id="plan_oStartDate" onchange="updPlanParam('oStartDate', this.value)"></div>
+      <div class="field"><label>Working Days / Week</label>
+        <select id="plan_wdpw_o" onchange="updPlanParam('workingDaysPerWeek', Number(this.value))">
+          <option value="5">5 (Mon–Fri)</option><option value="6" selected>6 (Mon–Sat)</option><option value="7">7</option>
+        </select>
+      </div>
+    </div>
+    <div class="clash-summary" id="oplanStats"></div>
+  </div>
+  <div class="card">
+    <h3>Erection Schedule (Gantt)</h3>
+    <div id="oplanGantt"></div>
+  </div>
+  <div class="card">
+    <h3>Erection Progress by Item</h3>
+    <div class="table-wrap"><table>
+      <thead><tr><th>Description</th><th>Section</th><th>Plan Qty</th><th>Delivered (live)</th><th>Output/day</th><th>Complexity</th><th>Start</th><th>End</th><th>Dur (d)</th><th>Status</th><th>Actual</th><th></th></tr></thead>
+      <tbody id="oplanBody"></tbody>
+      <tfoot><tr id="oplanTotalsRow" style="background:#161616;font-weight:700;">
+        <td colspan="2" style="text-align:right;color:var(--muted);text-transform:uppercase;font-size:10px;letter-spacing:.4px;">Totals:</td>
+        <td id="oplanTotQty" style="text-align:center;color:var(--gold);"></td>
+        <td id="oplanTotDelivered" style="text-align:center;color:var(--gold);"></td>
+        <td colspan="6"></td>
+        <td id="oplanTotActual" style="text-align:center;color:var(--gold);"></td>
+        <td></td>
+      </tr></tfoot>
+    </table></div>
+    <div class="empty" id="oplanEmpty" style="display:none;">
+      <div class="big">🏗</div>
+      No plan items yet. Sync from the tracker, import a file, or add items manually.
+    </div>
+  </div>
+</section>
+
 </main>
 
 <!-- ===================== NEW ISSUE MODAL ===================== -->
@@ -623,6 +737,10 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <label class="print-opt"><input type="checkbox" id="pr_catNotDelivered"><span>📦 Not fully delivered to site (incl. partial deliveries)</span></label>
     <label class="print-opt"><input type="checkbox" id="pr_catUnlinked"><span>⚠️ Issued/delivered but missing from GA part list</span></label>
     <div class="hint" style="margin-top:2px;">Category reports respect the currently active profile/category/search filter, and each includes its own quantity totals.</div>
+
+    <div class="section-title">Planning Reports</div>
+    <label class="print-opt"><input type="checkbox" id="pr_wplan"><span>🏭 Workshop Fabrication Plan (issued items)</span></label>
+    <label class="print-opt"><input type="checkbox" id="pr_oplan"><span>🏗 Onsite Erection Plan (delivered items)</span></label>
 
     <div class="section-title">Report Sign-off</div>
     <div style="display:flex;gap:10px;align-items:flex-start;flex-wrap:wrap;">
@@ -847,6 +965,7 @@ let state = {
   gaItems: [],       // {id, description, section, category, unit, gaQty, planQty, elevationQty, threeDQty, drawingRef, marks, notes, markBreakdown:[{mark, qty, length, material, weight, status}]}
   workshopIssues: [], // {id, issueDate, issueRef, issuedBy, items:[{gaItemId, description, section, qtyIssued, marks, markList:[], notes}]}
   deliveryNotes: [],  // {id, deliveryDate, vehicleRef, driverName, imageData, items:[{description, gaItemId, qtyDelivered, marks, markList:[], confidence, notes}]}
+  planning: { params: { wStartDate:"", oStartDate:"", workingDaysPerWeek:6 }, items: [] }, // workshop fabrication + onsite erection planning
 };
 let dnReviewItems = []; // OCR review items before saving
 let issueEditItems = []; // Items being composed in issue modal
@@ -1100,6 +1219,9 @@ function loadLocal(){
       if(!state.gaItems) state.gaItems = [];
       if(!state.workshopIssues) state.workshopIssues = [];
       if(!state.deliveryNotes) state.deliveryNotes = [];
+      if(!state.planning) state.planning = blankPlanning();
+      if(!state.planning.params) state.planning.params = blankPlanning().params;
+      if(!state.planning.items) state.planning.items = [];
     }catch(e){ console.error('local load failed', e); }
   }
 }
@@ -1158,6 +1280,8 @@ function switchTab(tab){
   if(tab==='issue') renderIssues();
   if(tab==='delivery') renderDeliveryNotes();
   if(tab==='clash') renderClashCheck();
+  if(tab==='wplan') renderWPlan();
+  if(tab==='oplan') renderOPlan();
 }
 
 /* ============================================================
@@ -3591,6 +3715,8 @@ function getPrintSelections(){
     catNotIssued: on('pr_catNotIssued'),
     catNotDelivered: on('pr_catNotDelivered'),
     catUnlinked: on('pr_catUnlinked'),
+    wplan: on('pr_wplan'),
+    oplan: on('pr_oplan'),
   };
 }
 
@@ -3686,6 +3812,8 @@ function buildPrintDocument(sel){
   if(sel.catNotIssued) bodyHtml += printClashHtml('not_issued');
   if(sel.catNotDelivered) bodyHtml += printClashHtml('not_delivered');
   if(sel.catUnlinked) bodyHtml += printClashHtml('unlinked');
+  if(sel.wplan) bodyHtml += printPlanHtml('workshop');
+  if(sel.oplan) bodyHtml += printPlanHtml('onsite');
 
   const headerHtml = `
   <div class="doc-header">
@@ -4194,7 +4322,397 @@ function toast(msg){
 function renderAll(){
   const safe = (fn) => { try{ fn(); }catch(e){ console.error(e); } };
   safe(renderHeader); safe(renderGA); safe(renderIssues); safe(renderDeliveryNotes); safe(renderClashCheck);
+  safe(renderWPlan); safe(renderOPlan);
   safe(renderFilterTotals); safe(initFilters);
+}
+
+/* ============================================================
+   PLANNING MODULE — Workshop Fabrication & Onsite Erection
+   (integrated from the Ropa Workshop & Onsite Planner)
+   ============================================================ */
+const WORKSHOP_RATES = {
+  "Columns (3-6m)": { outputPerDay:4 }, "Columns (6-9m)": { outputPerDay:3 },
+  "Primary Beams (UB/UC 310+)": { outputPerDay:4 }, "Secondary Beams (UB/UC <310)": { outputPerDay:5 },
+  "Purlins (C/Z Section)": { outputPerDay:20 }, "Side Rails": { outputPerDay:18 },
+  "Eaves Beams": { outputPerDay:10 }, "Cleats & Brackets": { outputPerDay:35 },
+  "Fly Braces": { outputPerDay:25 }, "Stair Stringers": { outputPerDay:3 },
+  "Stair Treads": { outputPerDay:12 }, "Handrails (simple)": { outputPerDay:6 },
+  "Handrails (complex)": { outputPerDay:3 }, "Guardrails": { outputPerDay:5 },
+  "Gutters": { outputPerDay:6 }, "Downpipes": { outputPerDay:8 },
+  "Louver Frames": { outputPerDay:6 }, "Door/Window Frames": { outputPerDay:3 },
+  "Grating Panels": { outputPerDay:8 }, "Checker Plate Panels": { outputPerDay:5 },
+  "Truss Assembly": { outputPerDay:1 }, "Bracing (VBR/HBR)": { outputPerDay:15 },
+  "Base Plates": { outputPerDay:20 }, "Rafters": { outputPerDay:4 },
+};
+const ONSITE_RATES = {
+  "Steel Columns (light <100kg)": { outputPerDay:12 }, "Steel Columns (medium 100-300kg)": { outputPerDay:8 },
+  "Steel Columns (heavy >300kg)": { outputPerDay:5 }, "Primary Beams (crane access)": { outputPerDay:10 },
+  "Primary Beams (limited access)": { outputPerDay:6 }, "Purlins (C/Z Section)": { outputPerDay:25 },
+  "Side Rails (Wall Girts)": { outputPerDay:25 }, "Sag Rods / Tie Rods": { outputPerDay:40 },
+  "Eaves Beams": { outputPerDay:12 }, "Cleats & Brackets": { outputPerDay:30 },
+  "Roofing Sheets (standard)": { outputPerDay:80 }, "Roofing Sheets (insulated)": { outputPerDay:55 },
+  "Side/Wall Cladding": { outputPerDay:60 }, "Flashings & Trims": { outputPerDay:35 },
+  "Steel Gutters": { outputPerDay:25 }, "Downpipes": { outputPerDay:40 },
+  "Bracing (VBR/HBR)": { outputPerDay:20 }, "Trusses": { outputPerDay:2 }, "Rafters": { outputPerDay:8 },
+};
+
+function blankPlanning(){
+  return { params: { wStartDate:"", oStartDate:"", workingDaysPerWeek:6 }, items: [] };
+}
+
+function planPhaseKeys(type){
+  // Maps a phase to its field names on a plan item, and its live tracker quantity.
+  return type==='workshop'
+    ? { qty:'wQty', out:'wOutputPerDay', start:'wStart', end:'wEnd', dur:'wDuration', status:'wStatus', actual:'wActual', rates:WORKSHOP_RATES, startParam:'wStartDate', live:'issued' }
+    : { qty:'oQty', out:'oOutputPerDay', start:'oStart', end:'oEnd', dur:'oDuration', status:'oStatus', actual:'oActual', rates:ONSITE_RATES, startParam:'oStartDate', live:'delivered' };
+}
+
+function blankPlanItem(){
+  return { id: uid(), gaItemId:'', description:'', section:'', category:'secondary_members', unit:'No.',
+    complexity:'standard',
+    wQty:0, wOutputPerDay:null, wStart:'', wEnd:'', wDuration:null, wStatus:'pending', wActual:0,
+    oQty:0, oOutputPerDay:null, oStart:'', oEnd:'', oDuration:null, oStatus:'pending', oActual:0,
+    notes:'', sortOrder: (state.planning.items.reduce((m,i)=>Math.max(m, i.sortOrder||0), 0) + 1) };
+}
+
+/* ---- date helpers (planner engine) ---- */
+function planAddDays(d, n){ const x = new Date(d); x.setDate(x.getDate()+n); return x; }
+function planAddWorkingDays(startDate, days, wdpw){
+  wdpw = wdpw || 6;
+  let current = new Date(startDate), added = 0;
+  while(added < Math.max(0, Math.floor(days))){
+    current = planAddDays(current, 1);
+    if(wdpw===6 && current.getDay()===0) continue;
+    if(wdpw===5 && (current.getDay()===0 || current.getDay()===6)) continue;
+    added++;
+  }
+  return current;
+}
+function planCalcDuration(qty, outputPerDay, complexity){
+  let factor = 1;
+  if(complexity==='complex') factor = 1.3;
+  if(complexity==='simple') factor = 0.9;
+  const days = (Number(qty)||0) / ((Number(outputPerDay)||1) * factor);
+  return Math.max(0.5, Math.round(days*100)/100);
+}
+function planFindRate(description, rates){
+  if(rates[description]) return rates[description];
+  const descLower = (description||'').toLowerCase();
+  if(!descLower) return null;
+  for(const [key, value] of Object.entries(rates)){
+    const keyLower = key.toLowerCase();
+    if(descLower.includes(keyLower) || keyLower.includes(descLower)) return value;
+  }
+  // word-overlap fallback so "VBR bracing angles" still hits "Bracing (VBR/HBR)"
+  const words = descLower.replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w.length>2);
+  for(const [key, value] of Object.entries(rates)){
+    const keyWords = key.toLowerCase().replace(/[^a-z0-9]+/g,' ').split(' ').filter(w=>w.length>2);
+    if(words.some(w=>keyWords.includes(w))) return value;
+  }
+  return null;
+}
+
+/* ---- live tracker quantities per GA item ---- */
+function trackerTotalsByGaId(){
+  const totals = {};
+  state.gaItems.forEach(ga => { totals[ga.id] = { issued:0, delivered:0 }; });
+  state.workshopIssues.forEach(iss => iss.items.forEach(it => {
+    if(it.gaItemId && totals[it.gaItemId]) totals[it.gaItemId].issued += Number(it.qtyIssued)||0;
+  }));
+  state.deliveryNotes.forEach(dn => dn.items.forEach(it => {
+    if(it.gaItemId && totals[it.gaItemId]) totals[it.gaItemId].delivered += Number(it.qtyDelivered)||0;
+  }));
+  return totals;
+}
+
+/* ---- link with tracker ---- */
+function syncPlanFromTracker(type){
+  const k = planPhaseKeys(type);
+  const totals = trackerTotalsByGaId();
+  let created = 0, updated = 0;
+  state.gaItems.forEach(ga => {
+    let item = state.planning.items.find(p => p.gaItemId === ga.id);
+    if(!item){
+      item = blankPlanItem();
+      item.gaItemId = ga.id;
+      created++;
+      state.planning.items.push(item);
+    } else {
+      updated++;
+    }
+    // keep identity fields in step with GA
+    item.description = ga.description;
+    item.section = ga.section;
+    item.category = ga.category || item.category;
+    item.unit = ga.unit || item.unit;
+    item[k.qty] = totals[ga.id] ? totals[ga.id][k.live] : 0;
+  });
+  saveLocal();
+  renderPlanTab(type);
+  toast(`Synced from tracker — ${created} item(s) added, ${updated} updated. ${type==='workshop'?'Plan Qty = total issued to workshop.':'Plan Qty = total delivered to site.'}`);
+}
+
+/* ---- manual import from Excel/CSV ---- */
+function importPlanExcel(type, e){
+  const file = e.target.files && e.target.files[0];
+  e.target.value = '';
+  if(!file) return;
+  const k = planPhaseKeys(type);
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    try{
+      const wb = XLSX.read(new Uint8Array(ev.target.result), { type:'array' });
+      const rows = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { header:1, defval:'' });
+      if(rows.length < 2){ toast('File appears empty.'); return; }
+      // Find header row: look for a row containing a description-like and qty-like column
+      const headerIdx = rows.findIndex(r => r.some(cell => /desc|item|member|mark/i.test(String(cell))) && r.some(cell => /qty|quantity|no\.?s?$/i.test(String(cell))));
+      if(headerIdx === -1){ toast('Could not find header row — need Description and Qty columns.'); return; }
+      const header = rows[headerIdx].map(h => String(h).toLowerCase());
+      const col = (patterns) => header.findIndex(h => patterns.some(p => p.test(h)));
+      const cDesc = col([/desc/, /item/, /member/, /mark/]);
+      const cSec  = col([/section/, /profile/]);
+      const cQty  = col([/qty/, /quantity/]);
+      let added = 0;
+      for(let i = headerIdx+1; i < rows.length; i++){
+        const r = rows[i];
+        const desc = String(r[cDesc]||'').trim();
+        const qty = Number(r[cQty]);
+        if(!desc || !isFinite(qty) || qty <= 0) continue;
+        const item = blankPlanItem();
+        item.description = desc;
+        item.section = cSec >= 0 ? String(r[cSec]||'').trim() : '';
+        item[k.qty] = qty;
+        // Try to link to a GA item so live quantities show
+        const ga = findBestGAMatch(desc);
+        if(ga && !state.planning.items.some(p=>p.gaItemId===ga.id)) item.gaItemId = ga.id;
+        state.planning.items.push(item);
+        added++;
+      }
+      saveLocal();
+      renderPlanTab(type);
+      toast(added ? `Imported ${added} plan item(s) from ${file.name}.` : 'No usable rows found (need Description + Qty > 0).');
+    }catch(err){
+      console.error(err);
+      toast('Could not read that file — is it a valid Excel/CSV?');
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+/* ---- editing ---- */
+function addPlanItem(type){
+  state.planning.items.push(blankPlanItem());
+  saveLocal();
+  renderPlanTab(type);
+}
+function deletePlanItem(id, type){
+  state.planning.items = state.planning.items.filter(p => p.id !== id);
+  saveLocal();
+  renderPlanTab(type);
+}
+function updPlanItem(id, key, val){
+  const item = state.planning.items.find(p => p.id === id);
+  if(!item) return;
+  item[key] = val;
+  saveLocal();
+  // Re-render only stats/gantt (not the table) so typing isn't interrupted
+  const type = ['wQty','wOutputPerDay','wStart','wEnd','wStatus','wActual'].includes(key) ? 'workshop'
+             : ['oQty','oOutputPerDay','oStart','oEnd','oStatus','oActual'].includes(key) ? 'onsite' : null;
+  if(type){ renderPlanStats(type); renderPlanGantt(type); }
+  if(key==='wStatus'||key==='oStatus') renderPlanTab(type); // badge colour needs the row redrawn
+}
+function updPlanParam(key, val){
+  state.planning.params[key] = val;
+  saveLocal();
+}
+
+/* ---- auto-scheduling ---- */
+function autoSchedulePlan(type){
+  const k = planPhaseKeys(type);
+  const startISO = state.planning.params[k.startParam];
+  if(!startISO){ toast(`Set the ${type==='workshop'?'Workshop':'Erection'} Start Date first.`); return; }
+  const wdpw = state.planning.params.workingDaysPerWeek || 6;
+  const items = state.planning.items.filter(p => (Number(p[k.qty])||0) > 0)
+    .sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  if(items.length === 0){ toast('No plan items with quantity > 0 to schedule.'); return; }
+  let currentDate = new Date(startISO + 'T00:00:00');
+  for(const item of items){
+    const rate = planFindRate(item.description, k.rates);
+    const outputPerDay = Number(item[k.out]) || (rate && rate.outputPerDay) || 10;
+    const duration = planCalcDuration(item[k.qty], outputPerDay, item.complexity);
+    const endDate = planAddWorkingDays(currentDate, duration, wdpw);
+    item[k.out] = outputPerDay;
+    item[k.start] = fmtISO(currentDate);
+    item[k.end] = fmtISO(endDate);
+    item[k.dur] = duration;
+    currentDate = planAddDays(endDate, 1);
+    while((wdpw===6 && currentDate.getDay()===0) || (wdpw===5 && (currentDate.getDay()===0 || currentDate.getDay()===6))){
+      currentDate = planAddDays(currentDate, 1);
+    }
+  }
+  saveLocal();
+  renderPlanTab(type);
+  toast(`${type==='workshop'?'Workshop':'Erection'} schedule calculated for ${items.length} item(s).`);
+}
+
+/* ---- rendering ---- */
+function planStatusColor(status){
+  switch(status){
+    case 'completed': return 'var(--green)';
+    case 'in_progress': return 'var(--blue)';
+    case 'behind': return 'var(--red)';
+    case 'on_hold': return 'var(--amber)';
+    default: return 'var(--slate)';
+  }
+}
+
+function renderPlanStats(type){
+  const k = planPhaseKeys(type);
+  const el = document.getElementById(type==='workshop' ? 'wplanStats' : 'oplanStats');
+  if(!el) return;
+  const items = state.planning.items;
+  const totQty = items.reduce((s,p)=>s+(Number(p[k.qty])||0),0);
+  const totActual = items.reduce((s,p)=>s+(Number(p[k.actual])||0),0);
+  const pct = totQty ? Math.round(totActual/totQty*100) : 0;
+  const done = items.filter(p=>p[k.status]==='completed').length;
+  const behind = items.filter(p=>p[k.status]==='behind').length;
+  const withQty = items.filter(p=>(Number(p[k.qty])||0)>0).length;
+  el.innerHTML = `
+    <div class="clash-card ok"><div class="label">Plan Items</div><div class="value" style="color:var(--gold);">${withQty}</div></div>
+    <div class="clash-card ok"><div class="label">Planned Qty</div><div class="value" style="color:var(--gold);">${totQty}</div></div>
+    <div class="clash-card ok"><div class="label">${type==='workshop'?'Fabricated':'Erected'} (actual)</div><div class="value" style="color:var(--green);">${totActual}</div></div>
+    <div class="clash-card ${pct>=100?'ok':'warn'}"><div class="label">Progress</div><div class="value" style="color:var(${pct>=100?'--green':'--amber'});">${pct}%</div></div>
+    <div class="clash-card ok"><div class="label">Completed Items</div><div class="value" style="color:var(--green);">${done}</div></div>
+    <div class="clash-card ${behind>0?'clash':'ok'}"><div class="label">Behind Schedule</div><div class="value" style="color:var(${behind>0?'--red':'--green'});">${behind}</div></div>`;
+}
+
+function renderPlanGantt(type){
+  const k = planPhaseKeys(type);
+  const el = document.getElementById(type==='workshop' ? 'wplanGantt' : 'oplanGantt');
+  if(!el) return;
+  const scheduled = state.planning.items.filter(p => p[k.start] && p[k.end]);
+  if(scheduled.length === 0){
+    el.innerHTML = `<div class="empty"><div class="big">📅</div>No ${type==='workshop'?'workshop':'erection'} dates yet — click "Auto-schedule".</div>`;
+    return;
+  }
+  const allStart = scheduled.map(p => new Date(p[k.start]+'T00:00:00'));
+  const allEnd = scheduled.map(p => new Date(p[k.end]+'T00:00:00'));
+  const minD = new Date(Math.min(...allStart));
+  const maxD = new Date(Math.max(...allEnd));
+  const span = Math.max(1, (maxD - minD)/86400000);
+  let html = `<div class="week-header"><div class="gantt-label"></div><div style="flex:1;display:flex;justify-content:space-between;"><span>${displayDate(fmtISO(minD))}</span><span>${displayDate(fmtISO(maxD))}</span></div></div>`;
+  const sorted = [...scheduled].sort((a,b)=>new Date(a[k.start])-new Date(b[k.start]));
+  for(const p of sorted){
+    const s = new Date(p[k.start]+'T00:00:00'), e = new Date(p[k.end]+'T00:00:00');
+    const left = ((s-minD)/86400000)/span*100;
+    const width = Math.max(1.5, ((e-s)/86400000)/span*100);
+    html += `<div class="gantt-row">
+      <div class="gantt-label" title="${esc(p.description)}">${esc(p.description||'(untitled)')}</div>
+      <div class="gantt-track"><div class="gantt-bar" style="left:${left}%;width:${width}%;background:${planStatusColor(p[k.status])};" title="${displayDate(p[k.start])} – ${displayDate(p[k.end])}">${p[k.dur]?p[k.dur]+'d':''}</div></div>
+    </div>`;
+  }
+  el.innerHTML = html;
+}
+
+const PLAN_STATUS_OPTIONS = [['pending','Pending'],['in_progress','In Progress'],['completed','Completed'],['behind','Behind'],['on_hold','On Hold']];
+
+function renderPlanTab(type){
+  const k = planPhaseKeys(type);
+  const body = document.getElementById(type==='workshop' ? 'wplanBody' : 'oplanBody');
+  const empty = document.getElementById(type==='workshop' ? 'wplanEmpty' : 'oplanEmpty');
+  if(!body) return;
+
+  // populate params UI
+  const startInput = document.getElementById(type==='workshop' ? 'plan_wStartDate' : 'plan_oStartDate');
+  if(startInput) startInput.value = state.planning.params[k.startParam] || '';
+  const wdpwSel = document.getElementById(type==='workshop' ? 'plan_wdpw' : 'plan_wdpw_o');
+  if(wdpwSel) wdpwSel.value = String(state.planning.params.workingDaysPerWeek || 6);
+
+  renderPlanStats(type);
+  renderPlanGantt(type);
+
+  const totals = trackerTotalsByGaId();
+  const items = [...state.planning.items].sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  if(items.length === 0){
+    empty.style.display = 'block';
+    body.innerHTML = '';
+  } else {
+    empty.style.display = 'none';
+    body.innerHTML = items.map(p => {
+      const live = p.gaItemId && totals[p.gaItemId] ? totals[p.gaItemId][k.live] : null;
+      const liveCell = live === null
+        ? '<span class="hint">not linked</span>'
+        : `<b style="color:var(--blue);">${live}</b>${live !== (Number(p[k.qty])||0) ? ' <span class="hint" title="Live tracker quantity differs from plan qty — re-sync to update">≠</span>' : ''}`;
+      return `<tr>
+        <td><input type="text" value="${esc(p.description)}" style="min-width:150px;" oninput="updPlanItem('${p.id}','description',this.value)"></td>
+        <td><input type="text" value="${esc(p.section)}" style="width:100px;" class="mono" oninput="updPlanItem('${p.id}','section',this.value)"></td>
+        <td><input type="number" min="0" value="${p[k.qty]||0}" style="width:70px;text-align:center;" oninput="updPlanItem('${p.id}','${k.qty}',Number(this.value))"></td>
+        <td style="text-align:center;">${liveCell}</td>
+        <td><input type="number" min="0" step="0.5" value="${p[k.out]??''}" placeholder="auto" style="width:70px;text-align:center;" oninput="updPlanItem('${p.id}','${k.out}',this.value===''?null:Number(this.value))"></td>
+        <td><select onchange="updPlanItem('${p.id}','complexity',this.value)" style="width:auto;">
+          <option value="simple" ${p.complexity==='simple'?'selected':''}>Simple</option>
+          <option value="standard" ${p.complexity==='standard'?'selected':''}>Standard</option>
+          <option value="complex" ${p.complexity==='complex'?'selected':''}>Complex</option>
+        </select></td>
+        <td><input type="date" value="${p[k.start]||''}" onchange="updPlanItem('${p.id}','${k.start}',this.value)"></td>
+        <td><input type="date" value="${p[k.end]||''}" onchange="updPlanItem('${p.id}','${k.end}',this.value)"></td>
+        <td style="text-align:center;">${p[k.dur]??'—'}</td>
+        <td><select onchange="updPlanItem('${p.id}','${k.status}',this.value)" style="width:auto;">
+          ${PLAN_STATUS_OPTIONS.map(([v,l])=>`<option value="${v}" ${p[k.status]===v?'selected':''}>${l}</option>`).join('')}
+        </select></td>
+        <td><input type="number" min="0" value="${p[k.actual]||0}" style="width:65px;text-align:center;" oninput="updPlanItem('${p.id}','${k.actual}',Number(this.value))"></td>
+        <td><button class="btn small danger" onclick="deletePlanItem('${p.id}','${type}')" title="Remove plan item">✕</button></td>
+      </tr>`;
+    }).join('');
+  }
+
+  // footer totals
+  const setT = (id,val) => { const el = document.getElementById(id); if(el) el.textContent = val; };
+  const totQty = items.reduce((s,p)=>s+(Number(p[k.qty])||0),0);
+  const totActual = items.reduce((s,p)=>s+(Number(p[k.actual])||0),0);
+  const totLive = items.reduce((s,p)=>s+((p.gaItemId && totals[p.gaItemId]) ? totals[p.gaItemId][k.live] : 0),0);
+  if(type==='workshop'){ setT('wplanTotQty', totQty); setT('wplanTotIssued', totLive); setT('wplanTotActual', totActual); }
+  else { setT('oplanTotQty', totQty); setT('oplanTotDelivered', totLive); setT('oplanTotActual', totActual); }
+}
+function renderWPlan(){ renderPlanTab('workshop'); }
+function renderOPlan(){ renderPlanTab('onsite'); }
+
+/* ---- plan print reports ---- */
+function printPlanHtml(type){
+  const k = planPhaseKeys(type);
+  const title = type==='workshop' ? 'Workshop Fabrication Plan — Issued Items' : 'Onsite Erection Plan — Delivered Items';
+  const items = [...state.planning.items].filter(p=>(Number(p[k.qty])||0)>0).sort((a,b)=>(a.sortOrder||0)-(b.sortOrder||0));
+  if(items.length===0) return `<h2>${title}</h2><p style="color:#888;">No plan items with quantity.</p>`;
+  const totals = trackerTotalsByGaId();
+  const totQty = items.reduce((s,p)=>s+(Number(p[k.qty])||0),0);
+  const totActual = items.reduce((s,p)=>s+(Number(p[k.actual])||0),0);
+  const pct = totQty ? Math.round(totActual/totQty*100) : 0;
+  let html = `<h2>${title}</h2>
+  <div class="summary-box">
+    <div class="summary-item"><div class="val">${items.length}</div><div class="lbl">Items</div></div>
+    <div class="summary-item"><div class="val">${totQty}</div><div class="lbl">Planned Qty</div></div>
+    <div class="summary-item"><div class="val">${totActual}</div><div class="lbl">${type==='workshop'?'Fabricated':'Erected'}</div></div>
+    <div class="summary-item"><div class="val" style="color:${pct>=100?'#1a7d2e':'#8a6d15'};">${pct}%</div><div class="lbl">Progress</div></div>
+  </div>
+  <table><thead><tr><th>Description</th><th>Section</th><th>Plan Qty</th><th>${type==='workshop'?'Issued':'Delivered'} (tracker)</th><th>Start</th><th>End</th><th>Dur (d)</th><th>Status</th><th>Actual</th></tr></thead><tbody>`;
+  for(const p of items){
+    const live = p.gaItemId && totals[p.gaItemId] ? totals[p.gaItemId][k.live] : '—';
+    html += `<tr${p[k.status]==='behind'?' class="clash-row"':''}>
+      <td>${esc(p.description)}</td><td>${esc(p.section)}</td>
+      <td style="text-align:center;font-weight:700;">${p[k.qty]}</td>
+      <td style="text-align:center;">${live}</td>
+      <td>${p[k.start]?displayDate(p[k.start]):'—'}</td><td>${p[k.end]?displayDate(p[k.end]):'—'}</td>
+      <td style="text-align:center;">${p[k.dur]??'—'}</td>
+      <td>${(p[k.status]||'pending').replace('_',' ')}</td>
+      <td style="text-align:center;">${p[k.actual]||0}</td>
+    </tr>`;
+  }
+  html += `<tr style="font-weight:700;background:#eef3fa;border-top:2px solid #1c5ea8;">
+    <td colspan="2" style="text-align:right;">TOTALS:</td>
+    <td style="text-align:center;">${totQty}</td><td></td><td></td><td></td><td></td><td></td>
+    <td style="text-align:center;">${totActual}</td>
+  </tr></tbody></table>`;
+  return html;
 }
 
 /* ============================================================
