@@ -4474,56 +4474,56 @@ function renderAll(){
    ============================================================ */
 
 const WORKSHOP_RATES = {
-  "Columns (3-6m)": { outputPerDay:4, manHoursPerUnit:2, crewSize:2, unit:"No." },
-  "Columns (6-9m)": { outputPerDay:3, manHoursPerUnit:2.7, crewSize:2, unit:"No." },
-  "Primary Beams (UB/UC 310+)": { outputPerDay:4, manHoursPerUnit:2, crewSize:2, unit:"No." },
-  "Secondary Beams (UB/UC <310)": { outputPerDay:5, manHoursPerUnit:1.6, crewSize:2, unit:"No." },
-  "Purlins (C/Z Section)": { outputPerDay:20, manHoursPerUnit:0.4, crewSize:2, unit:"No." },
-  "Side Rails": { outputPerDay:18, manHoursPerUnit:0.44, crewSize:2, unit:"No." },
-  "Eaves Beams": { outputPerDay:10, manHoursPerUnit:0.8, crewSize:2, unit:"No." },
-  "Cleats & Brackets": { outputPerDay:35, manHoursPerUnit:0.23, crewSize:2, unit:"No." },
-  "Fly Braces": { outputPerDay:25, manHoursPerUnit:0.32, crewSize:2, unit:"No." },
-  "Stair Stringers": { outputPerDay:3, manHoursPerUnit:2.7, crewSize:2, unit:"No." },
-  "Stair Treads": { outputPerDay:12, manHoursPerUnit:0.67, crewSize:2, unit:"No." },
-  "Handrails (simple)": { outputPerDay:6, manHoursPerUnit:1.3, crewSize:2, unit:"m" },
-  "Handrails (complex)": { outputPerDay:3, manHoursPerUnit:2.7, crewSize:2, unit:"m" },
-  "Guardrails": { outputPerDay:5, manHoursPerUnit:1.6, crewSize:2, unit:"m" },
-  "Gutters": { outputPerDay:6, manHoursPerUnit:1.3, crewSize:2, unit:"m" },
-  "Downpipes": { outputPerDay:8, manHoursPerUnit:1, crewSize:2, unit:"m" },
-  "Louver Frames": { outputPerDay:6, manHoursPerUnit:1.3, crewSize:2, unit:"No." },
-  "Door/Window Frames": { outputPerDay:3, manHoursPerUnit:2.7, crewSize:2, unit:"No." },
-  "Grating Panels": { outputPerDay:8, manHoursPerUnit:1, crewSize:2, unit:"m²" },
-  "Checker Plate Panels": { outputPerDay:5, manHoursPerUnit:1.6, crewSize:2, unit:"m²" },
-  "Truss Assembly": { outputPerDay:1, manHoursPerUnit:8, crewSize:2, unit:"No." },
-  "Bracing Rods": { outputPerDay:12, manHoursPerUnit:0.67, crewSize:2, unit:"No." },
-  "Bracing Angles": { outputPerDay:15, manHoursPerUnit:0.53, crewSize:2, unit:"No." },
-  "Full Welding": { outputPerDay:12, manHoursPerUnit:0.67, crewSize:2, unit:"m" },
-  "Surface Prep": { outputPerDay:50, manHoursPerUnit:0.16, crewSize:2, unit:"m²" },
+  "Columns (3-6m)": { outputPerDay:4, manHoursPerUnit:4, crewSize:2, unit:"No." },
+  "Columns (6-9m)": { outputPerDay:3, manHoursPerUnit:5.33, crewSize:2, unit:"No." },
+  "Primary Beams (UB/UC 310+)": { outputPerDay:4, manHoursPerUnit:4, crewSize:2, unit:"No." },
+  "Secondary Beams (UB/UC <310)": { outputPerDay:5, manHoursPerUnit:3.2, crewSize:2, unit:"No." },
+  "Purlins (C/Z Section)": { outputPerDay:20, manHoursPerUnit:0.8, crewSize:2, unit:"No." },
+  "Side Rails": { outputPerDay:18, manHoursPerUnit:0.89, crewSize:2, unit:"No." },
+  "Eaves Beams": { outputPerDay:10, manHoursPerUnit:1.6, crewSize:2, unit:"No." },
+  "Cleats & Brackets": { outputPerDay:35, manHoursPerUnit:0.46, crewSize:2, unit:"No." },
+  "Fly Braces": { outputPerDay:25, manHoursPerUnit:0.64, crewSize:2, unit:"No." },
+  "Stair Stringers": { outputPerDay:3, manHoursPerUnit:5.33, crewSize:2, unit:"No." },
+  "Stair Treads": { outputPerDay:12, manHoursPerUnit:1.33, crewSize:2, unit:"No." },
+  "Handrails (simple)": { outputPerDay:6, manHoursPerUnit:2.67, crewSize:2, unit:"m" },
+  "Handrails (complex)": { outputPerDay:3, manHoursPerUnit:5.33, crewSize:2, unit:"m" },
+  "Guardrails": { outputPerDay:5, manHoursPerUnit:3.2, crewSize:2, unit:"m" },
+  "Gutters": { outputPerDay:6, manHoursPerUnit:2.67, crewSize:2, unit:"m" },
+  "Downpipes": { outputPerDay:8, manHoursPerUnit:2, crewSize:2, unit:"m" },
+  "Louver Frames": { outputPerDay:6, manHoursPerUnit:2.67, crewSize:2, unit:"No." },
+  "Door/Window Frames": { outputPerDay:3, manHoursPerUnit:5.33, crewSize:2, unit:"No." },
+  "Grating Panels": { outputPerDay:8, manHoursPerUnit:2, crewSize:2, unit:"m²" },
+  "Checker Plate Panels": { outputPerDay:5, manHoursPerUnit:3.2, crewSize:2, unit:"m²" },
+  "Truss Assembly": { outputPerDay:1, manHoursPerUnit:16, crewSize:2, unit:"No." },
+  "Bracing Rods": { outputPerDay:12, manHoursPerUnit:1.33, crewSize:2, unit:"No." },
+  "Bracing Angles": { outputPerDay:15, manHoursPerUnit:1.07, crewSize:2, unit:"No." },
+  "Full Welding": { outputPerDay:12, manHoursPerUnit:1.33, crewSize:2, unit:"m" },
+  "Surface Prep": { outputPerDay:50, manHoursPerUnit:0.32, crewSize:2, unit:"m²" },
 };
 const ONSITE_RATES = {
-  "Steel Columns (light <100kg)": { outputPerDay:12, manHoursPerUnit:2, crewSize:4, unit:"No." },
-  "Steel Columns (medium 100-300kg)": { outputPerDay:8, manHoursPerUnit:3, crewSize:4, unit:"No." },
-  "Steel Columns (heavy >300kg)": { outputPerDay:5, manHoursPerUnit:4.8, crewSize:5, unit:"No." },
-  "Primary Beams (crane access)": { outputPerDay:10, manHoursPerUnit:2.4, crewSize:4, unit:"No." },
-  "Primary Beams (limited access)": { outputPerDay:6, manHoursPerUnit:4, crewSize:4, unit:"No." },
-  "Purlins (C/Z Section)": { outputPerDay:25, manHoursPerUnit:1, crewSize:3, unit:"No." },
-  "Side Rails (Wall Girts)": { outputPerDay:25, manHoursPerUnit:1, crewSize:3, unit:"No." },
-  "Sag Rods / Tie Rods": { outputPerDay:40, manHoursPerUnit:0.6, crewSize:2, unit:"No." },
-  "Eaves Beams": { outputPerDay:12, manHoursPerUnit:2, crewSize:3, unit:"No." },
-  "Cleats & Brackets": { outputPerDay:30, manHoursPerUnit:0.8, crewSize:2, unit:"No." },
-  "Roofing Sheets (standard)": { outputPerDay:80, manHoursPerUnit:0.6, crewSize:4, unit:"m²" },
-  "Roofing Sheets (insulated)": { outputPerDay:55, manHoursPerUnit:0.9, crewSize:4, unit:"m²" },
-  "Side/Wall Cladding": { outputPerDay:60, manHoursPerUnit:0.8, crewSize:4, unit:"m²" },
-  "Flashings & Trims": { outputPerDay:35, manHoursPerUnit:0.7, crewSize:2, unit:"m" },
-  "Steel Gutters": { outputPerDay:25, manHoursPerUnit:1, crewSize:3, unit:"m" },
-  "Downpipes": { outputPerDay:40, manHoursPerUnit:0.6, crewSize:2, unit:"m" },
-  "Roof Truss Erection": { outputPerDay:4, manHoursPerUnit:8, crewSize:5, unit:"No." },
-  "Bracing Rods": { outputPerDay:25, manHoursPerUnit:1, crewSize:2, unit:"No." },
-  "Bracing Angles": { outputPerDay:20, manHoursPerUnit:1.2, crewSize:3, unit:"No." },
-  "Panel Tank Assembly": { outputPerDay:0.5, manHoursPerUnit:64, crewSize:5, unit:"No." },
-  "Structural Bolting": { outputPerDay:30, manHoursPerUnit:0.5, crewSize:2, unit:"No." },
-  "Touch-up Painting": { outputPerDay:40, manHoursPerUnit:0.6, crewSize:2, unit:"m²" },
-  "Hand Rails": { outputPerDay:20, manHoursPerUnit:1.3, crewSize:3, unit:"m" },
+  "Steel Columns (light <100kg)": { outputPerDay:12, manHoursPerUnit:1.33, crewSize:2, unit:"No." },
+  "Steel Columns (medium 100-300kg)": { outputPerDay:8, manHoursPerUnit:2, crewSize:2, unit:"No." },
+  "Steel Columns (heavy >300kg)": { outputPerDay:5, manHoursPerUnit:3.2, crewSize:2, unit:"No." },
+  "Primary Beams (crane access)": { outputPerDay:10, manHoursPerUnit:1.6, crewSize:2, unit:"No." },
+  "Primary Beams (limited access)": { outputPerDay:6, manHoursPerUnit:2.67, crewSize:2, unit:"No." },
+  "Purlins (C/Z Section)": { outputPerDay:25, manHoursPerUnit:0.64, crewSize:2, unit:"No." },
+  "Side Rails (Wall Girts)": { outputPerDay:25, manHoursPerUnit:0.64, crewSize:2, unit:"No." },
+  "Sag Rods / Tie Rods": { outputPerDay:40, manHoursPerUnit:0.4, crewSize:2, unit:"No." },
+  "Eaves Beams": { outputPerDay:12, manHoursPerUnit:1.33, crewSize:2, unit:"No." },
+  "Cleats & Brackets": { outputPerDay:30, manHoursPerUnit:0.53, crewSize:2, unit:"No." },
+  "Roofing Sheets (standard)": { outputPerDay:80, manHoursPerUnit:0.2, crewSize:2, unit:"m²" },
+  "Roofing Sheets (insulated)": { outputPerDay:55, manHoursPerUnit:0.29, crewSize:2, unit:"m²" },
+  "Side/Wall Cladding": { outputPerDay:60, manHoursPerUnit:0.27, crewSize:2, unit:"m²" },
+  "Flashings & Trims": { outputPerDay:35, manHoursPerUnit:0.46, crewSize:2, unit:"m" },
+  "Steel Gutters": { outputPerDay:25, manHoursPerUnit:0.64, crewSize:2, unit:"m" },
+  "Downpipes": { outputPerDay:40, manHoursPerUnit:0.4, crewSize:2, unit:"m" },
+  "Roof Truss Erection": { outputPerDay:4, manHoursPerUnit:4, crewSize:2, unit:"No." },
+  "Bracing Rods": { outputPerDay:25, manHoursPerUnit:0.64, crewSize:2, unit:"No." },
+  "Bracing Angles": { outputPerDay:20, manHoursPerUnit:0.8, crewSize:2, unit:"No." },
+  "Panel Tank Assembly": { outputPerDay:0.5, manHoursPerUnit:32, crewSize:2, unit:"No." },
+  "Structural Bolting": { outputPerDay:30, manHoursPerUnit:0.53, crewSize:2, unit:"No." },
+  "Touch-up Painting": { outputPerDay:40, manHoursPerUnit:0.4, crewSize:2, unit:"m²" },
+  "Hand Rails": { outputPerDay:20, manHoursPerUnit:0.8, crewSize:2, unit:"m" },
 };
 
 function blankPlanning(){
@@ -4578,7 +4578,10 @@ function planCalcDuration(qty, outputPerDay, complexity){
   let factor = 1;
   if(complexity==='complex') factor = 1.3;
   if(complexity==='simple') factor = 0.9;
-  const days = (Number(qty)||0) / ((Number(outputPerDay)||1) * factor);
+  // Days scale WITH the factor (complex = 1.3x more days, simple = 0.9x fewer) — this must
+  // move the same direction as the man-hours factor in computePlanResources() below, or the
+  // schedule and the man-hours total silently diverge for every item marked complex/simple.
+  const days = ((Number(qty)||0) * factor) / (Number(outputPerDay)||1);
   return Math.max(0.5, Math.round(days*100)/100);
 }
 function planFindRate(description, rates){
@@ -4796,7 +4799,7 @@ function autoSchedulePlan(type, opts={}){
   let currentDate = new Date(startISO + 'T00:00:00');
   for(const item of items){
     const rate = planFindRate(item.description, k.rates);
-    const outputPerDay = Number(item[k.out]) || (rate && rate.outputPerDay) || 10;
+    const outputPerDay = Number(item[k.out]) || (rate && rate.outputPerDay) || PLAN_FALLBACK_OUTPUT_PER_DAY;
     const duration = planCalcDuration(item[k.qty], outputPerDay, item.complexity);
     const endDate = planAddWorkingDays(currentDate, duration, wdpw);
     item[k.out] = outputPerDay;
@@ -4973,6 +4976,9 @@ function renderOPlan(){ renderPlanTab('onsite'); }
    man-hours the calculator answers two questions:
    1. With the crew I set, how long will this take and when do we finish?
    2. To hit my target date, what crew size must I mobilize?  */
+// The basis every rate table entry is now calibrated to: 1 fundi + 1 assistant, 8-hour day.
+const PLAN_CREW_BASIS = 2, PLAN_HOURS_BASIS = 8, PLAN_FALLBACK_OUTPUT_PER_DAY = 10;
+
 function computePlanResources(type){
   ensurePlanningShape();
   const k = planPhaseKeys(type);
@@ -4987,15 +4993,21 @@ function computePlanResources(type){
   let totalManHours = 0, totalQty = 0, unrated = 0;
   const perItem = items.map(p => {
     const rate = planFindRate(p.description, k.rates);
-    const mhu = (rate && rate.manHoursPerUnit) || 1;
-    if(!rate) unrated++;
+    // Same effective output-per-day the scheduler uses: a manual per-item override first,
+    // then the matched rate, then the fallback default — so man-hours can never drift from
+    // whatever actually produced the Gantt dates.
+    const effectiveOutput = Number(p[k.out]) || (rate && rate.outputPerDay) || PLAN_FALLBACK_OUTPUT_PER_DAY;
+    if(!rate && !p[k.out]) unrated++;
     let factor = 1;
     if(p.complexity==='complex') factor = 1.3;
     if(p.complexity==='simple') factor = 0.9;
+    // Man-hours per unit implied by that output rate on the 2-person/8-hour basis, so
+    // totalManHours = PLAN_CREW_BASIS * PLAN_HOURS_BASIS * (sum of each item's scheduled days).
+    const mhu = (PLAN_CREW_BASIS * PLAN_HOURS_BASIS) / effectiveOutput;
     const mh = (Number(p[k.qty])||0) * mhu * factor;
     totalManHours += mh;
     totalQty += Number(p[k.qty])||0;
-    return { item:p, manHours: mh, rateCrew: (rate && rate.crewSize) || 2 };
+    return { item:p, manHours: mh, rateCrew: (rate && rate.crewSize) || PLAN_CREW_BASIS };
   });
   totalManHours = Math.round(totalManHours*10)/10;
 
