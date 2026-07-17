@@ -191,6 +191,8 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 .expand-btn:hover{color:var(--gold-bright);}
 .expand-btn.expanded{transform:rotate(90deg);}
 .mark-badge{display:inline-block;padding:1px 6px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap;}
+.mark-bulk-bar{display:flex;align-items:center;gap:8px;padding:5px 8px;margin-bottom:6px;background:#141a22;border:1px solid var(--line);border-radius:6px;}
+.mark-bulk-bar input[type=checkbox]{width:auto;}
 .mark-badge.ga{background:rgba(88,166,255,.12);color:var(--blue);border:1px solid rgba(88,166,255,.25);}
 .mark-badge.issued{background:rgba(210,153,34,.12);color:var(--amber);border:1px solid rgba(210,153,34,.25);}
 .mark-badge.delivered{background:rgba(63,185,80,.12);color:var(--green);border:1px solid rgba(63,185,80,.25);}
@@ -421,6 +423,14 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 
 <!-- ===================== DELIVERY NOTES TAB ===================== -->
 <section class="panel" id="panel-delivery">
+  <div class="card">
+    <div class="toolbar">
+      <h3 style="border:none;margin:0;">Dispatch List</h3>
+      <div class="spacer"></div>
+      <button class="btn solid" onclick="openDispatchModal()" title="Generate a printable dispatch/loading list of marks to tick as they are loaded and delivered">📋 Generate Dispatch List</button>
+    </div>
+    <p class="hint" style="margin-top:-4px;">Produces a printable list of GA marks (one line per mark, grouped by profile/assembly) with tick boxes for loading and delivery confirmation. Filter by profile above to dispatch a specific trade/section.</p>
+  </div>
   <div class="card">
     <h3>Upload Handwritten Delivery Note</h3>
     <p class="hint" style="margin-top:-8px;margin-bottom:12px;">
@@ -842,6 +852,20 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="field" style="margin-top:8px;"><label>Anon Key</label><input id="cfgSupaKey"></div>
     <div class="hint">Pre-filled with the Ropa Engineering Supabase project. Change only if syncing elsewhere.</div>
 
+    <div class="section-title">Cloud Sync</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" id="cfgAutoSave" checked onchange="setAutoCloudSave(this.checked)" style="width:auto;">
+      Auto-save to cloud
+    </label>
+    <div class="hint">When on, changes sync to the cloud automatically a few seconds after you stop editing — the header shows saved ✓ / saving… / unsaved. When off, use the Save button to sync manually. Local device saving always happens regardless.</div>
+
+    <div class="section-title">Import Behaviour</div>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">
+      <input type="checkbox" id="cfgPlatePooling" checked onchange="setPlatePooling(this.checked)" style="width:auto;">
+      Pool plates by thickness on import
+    </label>
+    <div class="hint">When on, plate marks (PLT/FL and PL/FL/FLT profiles) are grouped into one row per thickness on Excel import, with every mark kept in the expandable breakdown. Turn off to import each plate as its own item.</div>
+
     <div class="section-title">AI Model — Drawing &amp; Delivery Note Reading</div>
     <div class="field">
       <label>Provider</label>
@@ -1035,8 +1059,17 @@ let issueEditItems = []; // Items being composed in issue modal
 
 function uid(){ return 'x_'+Math.random().toString(36).slice(2,10)+Date.now().toString(36); }
 
+// --- Plate pooling toggle (persisted) ---
+window.PLATE_POOLING_ENABLED = (localStorage.getItem('rqt_plate_pooling') !== 'off');
+function setPlatePooling(on){
+  window.PLATE_POOLING_ENABLED = !!on;
+  localStorage.setItem('rqt_plate_pooling', on ? 'on' : 'off');
+  toast(on ? 'Plates will be pooled by thickness on import.' : 'Plates will be imported individually.');
+}
+
+// --- Plate pooling toggle (persisted) end ---
 function blankGAItem(){
-  return { id: uid(), description:"", section:"", category:"secondary_members", unit:"No.", gaQty:0, planQty:0, elevationQty:0, threeDQty:0, drawingRef:"", marks:"", notes:"", markBreakdown:[] };
+  return { id: uid(), description:"", section:"", category:"secondary_members", unit:"No.", gaQty:0, planQty:0, elevationQty:0, threeDQty:0, drawingRef:"", marks:"", notes:"", markBreakdown:[], importBatch:"", importDate:"", isPlatePool:false, plateThickness:null };
 }
 function blankDeliveryNote(){
   return { id: uid(), deliveryDate:"", vehicleRef:"", driverName:"", imageData:"", items:[] };
@@ -1282,6 +1315,66 @@ function computeFilteredTotals(){
 let undoStack = [], redoStack = [], lastSnapshot = null, lastUndoPush = 0;
 const UNDO_LIMIT = 60;
 
+/* ---- Auto cloud-save ----
+   saveLocal() (called on every edit) also flags the project dirty and schedules a debounced
+   cloud push, so changes reach Supabase a few seconds after you stop editing — no need to
+   click Save. The header pill shows saved ✓ / saving… / unsaved / error at all times.
+   Toggleable in Settings; falls back to manual-only cleanly when off or when offline. */
+let cloudSavedSnapshot = null;      // last snapshot confirmed in the cloud
+let autoSaveTimer = null;
+window.AUTO_CLOUD_SAVE = (localStorage.getItem('rqt_auto_cloud_save') !== 'off');
+
+function setSyncState(kind){
+  const el = document.getElementById('hdrSyncState');
+  if(!el) return;
+  const map = {
+    synced:   { t:'saved ✓',   c:'var(--green)' },
+    saving:   { t:'saving…',   c:'var(--amber)' },
+    dirty:    { t:'unsaved',   c:'var(--amber)' },
+    error:    { t:'save error — will retry', c:'var(--red)' },
+    offline:  { t:'local only', c:'var(--muted)' },
+    idle:     { t:'not synced', c:'var(--muted)' },
+  };
+  const s = map[kind] || map.idle;
+  el.textContent = s.t;
+  el.style.color = s.c;
+  el.style.borderColor = s.c;
+}
+
+function isDirtyVsCloud(){
+  return cloudSavedSnapshot !== null && JSON.stringify(state) !== cloudSavedSnapshot;
+}
+
+function scheduleAutoSave(delay=2500){
+  if(!window.AUTO_CLOUD_SAVE) return;
+  if(!sb){ setSyncState('offline'); return; }
+  clearTimeout(autoSaveTimer);
+  autoSaveTimer = setTimeout(() => { doCloudSave({ silent:true }); }, delay);
+}
+
+function setAutoCloudSave(on){
+  window.AUTO_CLOUD_SAVE = !!on;
+  localStorage.setItem('rqt_auto_cloud_save', on ? 'on' : 'off');
+  if(on){
+    toast('Auto-save to cloud is ON — changes sync automatically.');
+    if(isDirtyVsCloud()) scheduleAutoSave(500);
+  } else {
+    clearTimeout(autoSaveTimer);
+    toast('Auto-save OFF — use the Save button to sync to cloud.');
+    if(isDirtyVsCloud()) setSyncState('dirty');
+  }
+}
+
+// Warn before leaving with cloud-unsaved changes (auto-save may not have fired yet).
+window.addEventListener('beforeunload', (e) => {
+  if(sb && isDirtyVsCloud()){
+    // best-effort last push
+    scheduleAutoSave(0);
+    e.preventDefault();
+    e.returnValue = '';
+  }
+});
+
 function saveLocal(){
   const snap = JSON.stringify(state);
   if(lastSnapshot !== null && snap !== lastSnapshot){
@@ -1295,6 +1388,11 @@ function saveLocal(){
   }
   lastSnapshot = snap;
   localStorage.setItem(LS_KEYS.project, snap);
+  // Cloud auto-save: flag dirty + debounce a background push.
+  if(sb && isDirtyVsCloud()){
+    if(window.AUTO_CLOUD_SAVE){ setSyncState('saving'); scheduleAutoSave(); }
+    else setSyncState('dirty');
+  }
   updateUndoRedoButtons();
 }
 function undoAction(){
@@ -1442,10 +1540,11 @@ function renderGA(){
     const deliveredCount = hasMarks ? it.markBreakdown.filter(m=>m.status==='delivered').length : 0;
     const issuedCount = hasMarks ? it.markBreakdown.filter(m=>m.status==='issued').length : 0;
     const markSummary = hasMarks ? `<div class="mark-summary"><span class="count">${it.markBreakdown.length} marks</span>${deliveredCount>0?`<span class="count" style="color:var(--green)">${deliveredCount} delivered</span>`:''}${issuedCount>0?`<span class="count" style="color:var(--amber)">${issuedCount} issued</span>`:''}</div>` : '';
+    const badges = `${it.isPlatePool?'<span class="badge info" title="Pooled plates by thickness — expand to see/select individual marks">PLATES ⌄</span>':''}${it.importDate?`<span class="badge neutral" title="Import batch date">${displayDate(it.importDate)}</span>`:''}`;
     return `
     <tr class="ga-row">
       <td class="mono" style="color:var(--muted2);">${i+1}</td>
-      <td><input value="${esc(it.description)}" onchange="updGA('${it.id}','description',this.value)" style="min-width:140px;" placeholder="e.g. Purlin"></td>
+      <td><input value="${esc(it.description)}" onchange="updGA('${it.id}','description',this.value)" style="min-width:140px;" placeholder="e.g. Purlin">${badges?'<div style="margin-top:2px;display:flex;gap:4px;flex-wrap:wrap;">'+badges+'</div>':''}</td>
       <td><input value="${esc(it.section)}" onchange="updGA('${it.id}','section',this.value)" style="width:100px;" placeholder="e.g. CFLZ150"></td>
       <td>
         <select onchange="updGA('${it.id}','category',this.value)">
@@ -1476,6 +1575,7 @@ function renderMarkBreakdownRow(it){
   if(!it.markBreakdown || it.markBreakdown.length===0) return '';
   const rows = it.markBreakdown.map((m,mi)=>`
     <tr>
+      <td style="text-align:center;"><input type="checkbox" class="mark-cb-${it.id}" data-idx="${mi}" onchange="updateMarkSelectionCount('${it.id}')"></td>
       <td class="mono" style="color:var(--muted2);">${mi+1}</td>
       <td class="mono" style="font-weight:600;color:var(--gold);">${esc(m.mark)}</td>
       <td>${m.qty||1}</td>
@@ -1490,14 +1590,56 @@ function renderMarkBreakdownRow(it){
     <tr class="mark-breakdown-row" id="mark-row-${it.id}">
       <td colspan="13" class="mark-breakdown-cell">
         <div class="mark-breakdown-inner">
+          <div class="mark-bulk-bar">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;">
+              <input type="checkbox" id="mark-selall-${it.id}" onchange="toggleAllMarks('${it.id}',this.checked)"> Select all
+            </label>
+            <button class="btn small" onclick="setAllMarks('${it.id}',false)">Clear</button>
+            <span class="hint" id="mark-selcount-${it.id}" style="margin-left:2px;">0 selected</span>
+            <div class="spacer" style="flex:1;"></div>
+            <button class="btn small danger" onclick="removeSelectedMarks('${it.id}')" title="Delete all ticked marks">🗑 Delete selected</button>
+          </div>
           <table class="mark-table">
-            <thead><tr><th style="width:30px;">#</th><th>Mark</th><th>Qty</th><th>Length</th><th>Material</th><th>Weight</th><th>Status</th><th style="width:26px;"></th></tr></thead>
+            <thead><tr><th style="width:26px;"></th><th style="width:30px;">#</th><th>Mark</th><th>Qty</th><th>Length</th><th>Material</th><th>Weight</th><th>Status</th><th style="width:26px;"></th></tr></thead>
             <tbody>${rows}</tbody>
           </table>
         </div>
       </td>
     </tr>
   `;
+}
+
+function markCheckboxes(gaId){ return Array.from(document.querySelectorAll('.mark-cb-'+gaId)); }
+function selectedMarkIndices(gaId){ return markCheckboxes(gaId).filter(cb=>cb.checked).map(cb=>Number(cb.dataset.idx)); }
+function updateMarkSelectionCount(gaId){
+  const n = selectedMarkIndices(gaId).length;
+  const el = document.getElementById('mark-selcount-'+gaId);
+  if(el) el.textContent = `${n} selected`;
+  const total = markCheckboxes(gaId).length;
+  const selAll = document.getElementById('mark-selall-'+gaId);
+  if(selAll){ selAll.checked = n>0 && n===total; selAll.indeterminate = n>0 && n<total; }
+}
+function toggleAllMarks(gaId, val){ setAllMarks(gaId, val); }
+function setAllMarks(gaId, val){
+  markCheckboxes(gaId).forEach(cb=>cb.checked=val);
+  updateMarkSelectionCount(gaId);
+}
+function removeSelectedMarks(gaId){
+  const it = state.gaItems.find(x=>x.id===gaId);
+  if(!it || !it.markBreakdown) return;
+  const idxs = selectedMarkIndices(gaId);
+  if(idxs.length===0){ toast('No marks selected.'); return; }
+  if(!confirm(`Delete ${idxs.length} selected mark(s) from "${it.description}"? This also reduces the GA quantity accordingly.`)) return;
+  // remove high-to-low so indices stay valid
+  const removedQty = idxs.reduce((s,i)=>s+(Number(it.markBreakdown[i]?.qty)||1),0);
+  idxs.sort((a,b)=>b-a).forEach(i=>it.markBreakdown.splice(i,1));
+  it.gaQty = Math.max(0, it.gaQty - removedQty);
+  it.marks = collapseMarksToRanges(it.markBreakdown.map(m=>m.mark));
+  saveLocal(); renderGA(); autoFlagClashesForNewData();
+  toast(`Removed ${idxs.length} mark(s).`);
+  // keep the breakdown open after re-render
+  const row = document.getElementById('mark-row-'+gaId);
+  if(row){ row.classList.add('show'); const btn=document.getElementById('expand-'+gaId); if(btn) btn.textContent='▼'; }
 }
 
 function toggleMarkBreakdown(gaId){
@@ -2139,6 +2281,20 @@ function mapRowToItem(cols, headerCols){
   return { description: String(description).trim(), section: String(section).trim(), quantity, unit: unit||'No.', marks: String(marks).trim(), confidence:'medium', notes: String(notes).trim() };
 }
 
+// Inverse of collapseMarksToRanges: "A1-A4, B7" -> ["A1","A2","A3","A4","B7"]
+function expandMarkRanges(marksStr){
+  const out = [];
+  String(marksStr||'').split(',').map(s=>s.trim()).filter(Boolean).forEach(tok=>{
+    const range = tok.match(/^([A-Za-z\-]*?)(\d+)\s*-\s*([A-Za-z\-]*?)(\d+)$/);
+    if(range && range[1] === range[3]){
+      const prefix = range[1], a = parseInt(range[2],10), b = parseInt(range[4],10);
+      if(b >= a && (b-a) < 5000){ for(let n=a;n<=b;n++) out.push(prefix+n); return; }
+    }
+    out.push(tok);
+  });
+  return out;
+}
+
 function collapseMarksToRanges(marks){
   const byPrefix = new Map();
   const others = [];
@@ -2234,6 +2390,63 @@ function groupTeklaListRows(rowsOfCells){
   return { format, items };
 }
 
+// --- Plate pooling by thickness ---
+// Plates are assembly parts (marks like PLT12, FL5; profiles like PL10, FL200x12, FLT8).
+// For tracking, Dennis pools them into one row per thickness rather than dozens of single
+// marks — but keeps every mark so they stay selectable/filterable in a dropdown.
+function isPlateProfile(profile){
+  const p = (profile||'').trim().toUpperCase();
+  return /^(PL|FL|FLT)\b/.test(p) || /^(PL|FL|FLT)\s*\d/.test(p) || /\bPLATE\b/.test(p) || /\bFLAT\b/.test(p);
+}
+function isPlateMark(mark){
+  const m = (mark||'').trim().toUpperCase();
+  return /^(PLT|PL|FL|FLT)[\s\-_]?\d/.test(m) || /\b(PLT|FL)\d+\b/.test(m);
+}
+function plateThicknessFromProfile(profile){
+  // Pull the plate thickness out of common profile strings:
+  // "PL10" -> 10, "PL 12" -> 12, "FL200x12" -> 12 (last dim), "FLT8" -> 8, "PLATE 6MM" -> 6
+  const p = (profile||'').toUpperCase().replace(/MM/g,'');
+  const xMatch = p.match(/(\d+(?:\.\d+)?)\s*[X*]\s*(\d+(?:\.\d+)?)/); // WxT -> take the smaller as thickness
+  if(xMatch){ return Math.min(parseFloat(xMatch[1]), parseFloat(xMatch[2])); }
+  const m = p.match(/(?:PL|FL|FLT|PLATE|FLAT)\s*(\d+(?:\.\d+)?)/);
+  if(m) return parseFloat(m[1]);
+  const any = p.match(/(\d+(?:\.\d+)?)/);
+  return any ? parseFloat(any[1]) : null;
+}
+
+// Pool plate items in a parsed item[] into one row per thickness, keeping every mark in
+// markBreakdown. Non-plate items pass through untouched.
+function poolPlatesByThickness(items){
+  const plateGroups = new Map(); // thickness-key -> pooled item
+  const out = [];
+  for(const it of items){
+    const looksPlate = isPlateProfile(it.section || it.description) ||
+      ((it.markBreakdown||[]).length > 0 && it.markBreakdown.every(mb=>isPlateMark(mb.mark)));
+    if(!looksPlate){ out.push(it); continue; }
+    const thk = plateThicknessFromProfile(it.section || it.description);
+    const key = thk != null ? String(thk) : 'unknown';
+    if(!plateGroups.has(key)){
+      const pooled = {
+        description: thk != null ? `Plates ${thk}mm (pooled)` : 'Plates (pooled)',
+        section: thk != null ? `PL${thk}` : 'PL various',
+        quantity: 0, unit:'No.', marks:'', markBreakdown:[],
+        confidence:'high', notes:'Pooled plate marks — expand for individual marks',
+        isPlatePool:true, plateThickness: thk
+      };
+      plateGroups.set(key, pooled);
+      out.push(pooled);
+    }
+    const g = plateGroups.get(key);
+    const mbs = (it.markBreakdown && it.markBreakdown.length) ? it.markBreakdown
+              : [{ mark: it.marks || it.description, qty: Number(it.quantity)||0, length:null, material:'', weight:null, status:'ga' }];
+    mbs.forEach(mb => g.markBreakdown.push({...mb}));
+    g.quantity += mbs.reduce((s,m)=>s+(Number(m.qty)||0),0);
+  }
+  // finalize collapsed mark strings
+  plateGroups.forEach(g => { g.marks = collapseMarksToRanges(g.markBreakdown.map(m=>m.mark)); });
+  return out;
+}
+
 function rowsToItems(rowsOfCells){
   const tekla = groupTeklaListRows(rowsOfCells);
   if(tekla) return tekla;
@@ -2263,6 +2476,9 @@ function parseExcelRows(sheets){
   for(const rowsOfCells of sheets){
     const result = rowsToItems(rowsOfCells);
     if(result.items.length > best.items.length) best = result;
+  }
+  if(window.PLATE_POOLING_ENABLED !== false){
+    best = { format: best.format, items: poolPlatesByThickness(best.items) };
   }
   return best;
 }
@@ -2330,15 +2546,33 @@ async function gaParseWithAI(){
   }catch(err){ toast('AI parse failed: '+err.message); }
 }
 function applyItemsToGaReview(items){
+  // Every import is a dated batch — the date lets us categorize and later reconcile GA
+  // against issued/delivered part lists imported on different days.
+  const today = fmtISO(new Date());
+  const batchDate = prompt('Date of this part/assembly list import (YYYY-MM-DD):', today) || today;
+  const batchId = 'B' + Date.now().toString(36);
   gaReviewItems = items.map(it=>({
     selected: true, description: it.description||"", section: it.section||"",
     gaQty: Number(it.quantity)||0, unit: it.unit||"No.", marks: it.marks||"",
     markBreakdown: it.markBreakdown || [],
-    confidence: it.confidence||"medium", notes: it.notes||""
+    confidence: it.confidence||"medium", notes: it.notes||"",
+    importDate: batchDate, importBatch: batchId,
+    isPlatePool: !!it.isPlatePool, plateThickness: it.plateThickness ?? null
   }));
   document.getElementById('gaReviewCard').style.display='block';
   renderGaReview();
-  toast(`${gaReviewItems.length} item(s) parsed — review and confirm below.`);
+  const dupInfo = gaImportDuplicateSummary(gaReviewItems);
+  toast(`${gaReviewItems.length} item(s) parsed (batch ${displayDate(batchDate)})${dupInfo}. Review and confirm below.`);
+}
+
+// Detect parsed items whose profile+mark already exist in the GA schedule, so we can warn
+// on confirm and let the user choose what to do (per their preference: warn each time).
+function gaImportDuplicateSummary(reviewItems){
+  const existing = new Set();
+  state.gaItems.forEach(g => (g.markBreakdown||[]).forEach(mb => existing.add((g.description+'|'+mb.mark).toLowerCase())));
+  let dupMarks = 0;
+  reviewItems.forEach(it => (it.markBreakdown||[]).forEach(mb => { if(existing.has((it.description+'|'+mb.mark).toLowerCase())) dupMarks++; }));
+  return dupMarks ? ` — ⚠ ${dupMarks} mark(s) already exist in GA` : '';
 }
 
 async function handleIssuePdfDirect(e){
@@ -2383,19 +2617,29 @@ async function issueParseWithAI(){
   }catch(err){ toast('AI parse failed: '+err.message); }
 }
 function applyItemsToIssueEdit(items){
+  const today = fmtISO(new Date());
+  const batchDate = prompt('Date these drawings were issued to workshop (YYYY-MM-DD):', today) || today;
+  const batchId = 'I' + Date.now().toString(36);
   items.forEach(it=>{
     const matched = findBestGAMatch(it.description);
+    const breakdown = (it.markBreakdown && it.markBreakdown.length > 0) ? it.markBreakdown.map(m=>({...m, status:'issued'})) : [];
+    const qty = breakdown.length ? breakdown.reduce((s,m)=>s+(Number(m.qty)||0),0) : (Number(it.quantity) || 0);
+    const marks = breakdown.length ? collapseMarksToRanges(breakdown.map(m=>m.mark)) : (it.marks || "");
     issueEditItems.push({
       gaItemId: matched?.id || "",
       description: it.description || (matched?matched.description:""),
       section: it.section || (matched?matched.section:""),
-      qtyIssued: Number(it.quantity) || 0,
-      marks: it.marks || "",
+      qtyIssued: qty,
+      marks: marks,
+      markList: breakdown.map(m=>m.mark),
+      markBreakdown: breakdown,
+      importDate: batchDate,
+      importBatch: batchId,
       notes: it.notes || ""
     });
   });
   renderIssueEditItems();
-  toast(`${items.length} item(s) parsed and added — review in the items table below.`);
+  toast(`${items.length} item(s) parsed with mark detail (issued ${displayDate(batchDate)}) — review in the items table below.`);
 }
 
 async function handleDnPdfDirect(e){
@@ -2599,25 +2843,49 @@ function gaReviewSelectAll(val){ gaReviewItems.forEach(it=>it.selected=val); ren
 function confirmGAReviewItems(){
   const chosen = gaReviewItems.filter(it=>it.selected);
   if(chosen.length===0){ toast('Select at least one item.'); return; }
+
+  // Warn about marks that already exist in GA (per user preference: choose each time)
+  const existingMarks = new Map(); // mark-key -> existing GA description
+  state.gaItems.forEach(g => (g.markBreakdown||[]).forEach(mb => existingMarks.set((g.description+'|'+mb.mark).toLowerCase(), g.description)));
+  const dupList = [];
+  chosen.forEach(it => (it.markBreakdown||[]).forEach(mb => { if(existingMarks.has((it.description+'|'+mb.mark).toLowerCase())) dupList.push(`${it.description} · ${mb.mark}`); }));
+  let skipDupMarks = false;
+  if(dupList.length){
+    const preview = dupList.slice(0,8).join(', ') + (dupList.length>8?`, +${dupList.length-8} more`:'');
+    const choice = confirm(`${dupList.length} mark(s) already exist in the GA schedule:\n\n${preview}\n\nOK = SKIP the duplicate marks (add only new marks).\nCancel = ADD ANYWAY as a separate dated batch (keeps both).`);
+    skipDupMarks = choice; // OK => skip duplicates
+  }
+
+  let added = 0, skipped = 0;
   chosen.forEach(it=>{
+    let breakdown = (it.markBreakdown && it.markBreakdown.length > 0) ? it.markBreakdown.map(m=>({...m})) : [];
+    if(skipDupMarks && breakdown.length){
+      const before = breakdown.length;
+      breakdown = breakdown.filter(mb => !existingMarks.has((it.description+'|'+mb.mark).toLowerCase()));
+      skipped += (before - breakdown.length);
+      if(breakdown.length === 0) return; // whole item was duplicate
+    }
     const ga = blankGAItem();
     ga.description = it.description;
     ga.section = it.section;
-    ga.gaQty = it.gaQty;
+    ga.gaQty = breakdown.length ? breakdown.reduce((s,m)=>s+(Number(m.qty)||0),0) : it.gaQty;
     ga.unit = it.unit || "No.";
-    ga.marks = it.marks || "";
+    ga.marks = breakdown.length ? collapseMarksToRanges(breakdown.map(m=>m.mark)) : (it.marks || "");
     ga.notes = it.notes;
-    if(it.markBreakdown && it.markBreakdown.length > 0){
-      ga.markBreakdown = it.markBreakdown.map(m=>({...m}));
-    }
+    ga.importDate = it.importDate || "";
+    ga.importBatch = it.importBatch || "";
+    ga.isPlatePool = !!it.isPlatePool;
+    ga.plateThickness = it.plateThickness ?? null;
+    if(breakdown.length) ga.markBreakdown = breakdown;
     state.gaItems.push(ga);
+    added++;
   });
   gaReviewItems = [];
   document.getElementById('gaReviewCard').style.display = 'none';
   document.getElementById('gaExtractStatus').innerHTML = '';
   document.getElementById('gaFileInput').value = '';
   renderGA(); renderHeader(); saveLocal(); initFilters();
-  toast(`Added ${chosen.length} item(s) to GA schedule.`);
+  toast(`Added ${added} item(s) to GA schedule${skipped?`, skipped ${skipped} duplicate mark(s)`:''}.`);
   autoFlagClashesForNewData();
 }
 
@@ -3806,6 +4074,74 @@ function renderClashMarkStatus(markStatus){
   `;
 }
 
+/* ---- Dispatch list: printable mark list to tick during delivery ----
+   One line per GA mark, grouped by profile/assembly (per Dennis's workflow). Respects the
+   active profile/search filter so a single trade can be dispatched. Marks already delivered
+   are shown pre-ticked so the list doubles as an outstanding-dispatch sheet. */
+function buildDispatchGroups(){
+  const groups = new Map(); // profile/description -> [{mark, qty, status, length, weight}]
+  state.gaItems.forEach(ga => {
+    if(!itemMatchesFilters(ga, 'ga')) return;
+    const key = ga.description + (ga.section ? ' · ' + ga.section : '');
+    if(ga.markBreakdown && ga.markBreakdown.length){
+      ga.markBreakdown.forEach(mb => {
+        if(!groups.has(key)) groups.set(key, { label:key, isPlatePool: !!ga.isPlatePool, marks:[] });
+        groups.get(key).marks.push({ mark: mb.mark, qty: mb.qty||1, status: mb.status||'ga', length: mb.length||null, weight: mb.weight||null });
+      });
+    } else if(ga.marks){
+      // expand a collapsed mark string (e.g. "A1-A12") into individual marks
+      const expanded = expandMarkRanges(ga.marks);
+      if(!groups.has(key)) groups.set(key, { label:key, isPlatePool:!!ga.isPlatePool, marks:[] });
+      expanded.forEach(mk => groups.get(key).marks.push({ mark: mk, qty:1, status:'ga', length:null, weight:null }));
+    }
+  });
+  return Array.from(groups.values());
+}
+
+function openDispatchModal(){
+  const groups = buildDispatchGroups();
+  const totalMarks = groups.reduce((s,g)=>s+g.marks.length,0);
+  if(totalMarks === 0){ toast('No marks to dispatch — import a part list with marks into GA first (or clear the profile filter).'); return; }
+  printDispatchList(groups);
+}
+
+function printDispatchList(groups){
+  const p = state.project || {};
+  const filterNote = (activeFilters.sections.length || activeFilters.search)
+    ? `Filtered: ${[activeFilters.sections.join(', '), activeFilters.search?('"'+activeFilters.search+'"'):''].filter(Boolean).join(' · ')}` : 'All profiles';
+  let body = `<h2>Dispatch / Loading List</h2>
+    <p style="font-size:11px;color:#555;margin:2px 0 10px;">${esc(filterNote)} — tick each mark as it is loaded and again on delivery. Marks already recorded as delivered are pre-ticked.</p>`;
+  let grand = 0, grandDelivered = 0;
+  for(const g of groups){
+    const delivered = g.marks.filter(m=>m.status==='delivered').length;
+    grand += g.marks.length; grandDelivered += delivered;
+    body += `<h2 style="font-size:12px;">${esc(g.label)}${g.isPlatePool?' — POOLED PLATES':''} <span style="font-weight:400;color:#777;">(${g.marks.length} mark${g.marks.length!==1?'s':''})</span></h2>
+      <table><thead><tr>
+        <th style="width:34px;">Loaded</th><th style="width:34px;">Del.</th>
+        <th>Mark</th><th style="width:50px;">Qty</th><th style="width:70px;">Length</th><th style="width:70px;">Weight</th><th>Remarks</th>
+      </tr></thead><tbody>`;
+    for(const m of g.marks){
+      const tick = m.status==='delivered' ? '☑' : '☐';
+      body += `<tr>
+        <td style="text-align:center;font-size:15px;">☐</td>
+        <td style="text-align:center;font-size:15px;">${tick}</td>
+        <td style="font-weight:700;">${esc(m.mark)}</td>
+        <td style="text-align:center;">${m.qty||1}</td>
+        <td style="text-align:center;">${m.length?esc(String(m.length))+'mm':'—'}</td>
+        <td style="text-align:center;">${m.weight?esc(String(m.weight))+'kg':'—'}</td>
+        <td></td>
+      </tr>`;
+    }
+    body += '</tbody></table>';
+  }
+  body = `<h2>Dispatch / Loading List</h2>
+    <p style="font-size:11px;color:#555;margin:2px 0 10px;">${esc(filterNote)} — ${grand} mark(s) total, ${grandDelivered} already delivered, ${grand-grandDelivered} outstanding. Tick each mark as loaded and again on delivery.</p>`
+    + body.substring(body.indexOf('</p>')+4);
+
+  const html = buildStandalonePrintDoc(`${esc(p.name||'Project')} — Dispatch List`, body);
+  openPrintPreviewWith(html);
+}
+
 /* ============================================================
    PRINT REPORTS
    ============================================================ */
@@ -3893,8 +4229,11 @@ function printBuiltDocument(){
   if(!anySelected){ toast('Select at least one section to print.'); return; }
   savePreparedBy();
   closeModal('printModal');
-  const html = buildPrintDocument(sel);
+  openPrintPreviewWith(buildPrintDocument(sel));
+}
 
+// Shared print-preview overlay used by the main report and the dispatch list.
+function openPrintPreviewWith(html){
   let ov = document.getElementById('printPreviewOverlay');
   if(ov) ov.remove();
   ov = document.createElement('div');
@@ -3926,10 +4265,15 @@ function printPreviewClearBreaks(){
   f.contentWindow.document.querySelectorAll('.pb-before').forEach(el=>el.classList.remove('pb-before'));
 }
 
-function buildPrintDocument(sel){
+function buildStandalonePrintDoc(title, bodyHtml){
+  return buildPrintDocument(null, bodyHtml);
+}
+function buildPrintDocument(sel, customBody){
   const p = state.project;
   let bodyHtml = '';
-
+  if(customBody != null){
+    bodyHtml = customBody;
+  } else {
   if(sel.gaSchedule) bodyHtml += printGAScheduleHtml();
   if(sel.issueSummary) bodyHtml += printIssueSummaryHtml();
   if(sel.deliverySummary) bodyHtml += printDeliverySummaryHtml();
@@ -3944,6 +4288,7 @@ function buildPrintDocument(sel){
   if(sel.oplan) bodyHtml += printPlanHtml('onsite');
   if(sel.resources) bodyHtml += printResourceHtml();
   if(sel.combined) bodyHtml += printCombinedHtml();
+  }
 
   const headerHtml = `
   <div class="doc-header">
@@ -4211,10 +4556,20 @@ function printClashHtml(mode){
 /* ============================================================
    SUPABASE SYNC
    ============================================================ */
-async function saveProject(){
-  if(!sb){ toast('Supabase not configured — open Settings.'); return; }
+async function saveProject(){ return doCloudSave({ silent:false }); }
+
+// Core cloud-save used by both the manual Save button and the debounced auto-save.
+// Returns true on success. Silent mode skips toasts (for background auto-saves) but
+// still updates the header status pill so you always know the cloud state.
+let cloudSaveInFlight = false, cloudSaveQueued = false;
+async function doCloudSave(opts={}){
+  const silent = !!opts.silent;
+  if(!sb){ if(!silent) toast('Supabase not configured — open Settings.'); return false; }
+  // Coalesce overlapping saves: if one is mid-flight, mark that another is needed and bail.
+  if(cloudSaveInFlight){ cloudSaveQueued = true; return false; }
+  cloudSaveInFlight = true;
   if(!state.id) state.id = 'qtr_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7);
-  document.getElementById('hdrSyncState').textContent = 'saving…';
+  setSyncState('saving');
   state.project.updated_at = new Date().toISOString();
   const payload = {
     id: state.id,
@@ -4228,11 +4583,24 @@ async function saveProject(){
     },
     updated_at: state.project.updated_at
   };
-  const { error } = await sb.from('ropa_quantity_projects').upsert(payload);
-  if(error){ document.getElementById('hdrSyncState').textContent = 'sync error'; toast('Save failed: '+error.message); console.error(error); return; }
-  document.getElementById('hdrSyncState').textContent = 'synced ✓';
-  saveLocal();
-  toast('Project saved to cloud.');
+  let ok = false;
+  try{
+    const { error } = await sb.from('ropa_quantity_projects').upsert(payload);
+    if(error){ setSyncState('error'); if(!silent) toast('Save failed: '+error.message); console.error(error); }
+    else {
+      ok = true;
+      cloudSavedSnapshot = JSON.stringify(state);
+      setSyncState('synced');
+      saveLocal();
+      if(!silent) toast('Project saved to cloud.');
+    }
+  }catch(e){
+    setSyncState('error'); if(!silent) toast('Save failed: '+e.message); console.error(e);
+  }
+  cloudSaveInFlight = false;
+  // If edits landed while we were saving, run once more so the cloud ends up current.
+  if(cloudSaveQueued){ cloudSaveQueued = false; scheduleAutoSave(300); }
+  return ok;
 }
 
 async function refreshProjectList(){
@@ -4275,7 +4643,9 @@ async function loadProject(id){
     planning: d.planning || blankPlanning(),
   };
   ensurePlanningShape();
-  document.getElementById('hdrSyncState').textContent = 'synced ✓';
+  cloudSavedSnapshot = JSON.stringify(state);
+  lastSnapshot = cloudSavedSnapshot;
+  setSyncState('synced');
   renderAll();
   closeModal('projectsModal');
   toast('Project loaded.');
@@ -4352,6 +4722,8 @@ function exportExcel(){
 function closeModal(id){ document.getElementById(id).classList.remove('show'); }
 function openSettingsModal(){
   document.getElementById('cfgSupaUrl').value = getCfg(LS_KEYS.supaUrl, DEFAULT_SUPA_URL);
+  const pp = document.getElementById('cfgPlatePooling'); if(pp) pp.checked = window.PLATE_POOLING_ENABLED !== false;
+  const as = document.getElementById('cfgAutoSave'); if(as) as.checked = window.AUTO_CLOUD_SAVE !== false;
   document.getElementById('cfgSupaKey').value = getCfg(LS_KEYS.supaKey, DEFAULT_SUPA_KEY);
   document.getElementById('cfgAnthropicKey').value = getCfg(LS_KEYS.anthropicKey, "");
   document.getElementById('cfgGeminiKey').value = getCfg(LS_KEYS.geminiKey, "");
@@ -5258,6 +5630,17 @@ loadLocal();
 checkDnApiKey();
 checkGaApiKey();
 renderAll();
+
+// On startup the local copy may be ahead of the cloud (edited last session without a sync).
+// We don't know the cloud state until a load/save, so show an honest status: if cloud is
+// configured, mark 'unsaved' so the user knows to sync (auto-save will also catch up shortly
+// on the next edit); otherwise 'local only'.
+if(sb){
+  if(state.id){ setSyncState('dirty'); if(window.AUTO_CLOUD_SAVE) scheduleAutoSave(1500); }
+  else setSyncState('idle');
+} else {
+  setSyncState('offline');
+}
 
 </script>
 </body>
