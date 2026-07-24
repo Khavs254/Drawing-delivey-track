@@ -218,6 +218,10 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
 .mark-chk{display:flex;align-items:center;gap:6px;padding:3px 6px;font-size:11px;cursor:pointer;}
 .mark-chk:hover{background:#222;}
 .mark-chk input{width:auto;margin:0;}
+.mark-select-wrap{min-width:190px;}
+.mark-select-bar{display:flex;align-items:center;gap:4px;margin-bottom:4px;}
+.mark-select-bar .mark-filter{flex:1;min-width:60px;padding:3px 6px;font-size:11px;background:#1a1a1a;border:1px solid var(--line2);color:var(--gold);border-radius:4px;}
+.mark-select-bar .btn.small{padding:2px 7px;font-size:10px;}
 
 /* ---- Planning tabs (Workshop Plan / Onsite Erection) ---- */
 .gantt-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
@@ -1992,20 +1996,115 @@ function renderIssueEditItems(){
         </tbody>
       </table>
     </div>`;
+  // Re-apply any active per-item mark filters (the table is rebuilt on every toggle).
+  issueEditItems.forEach((_,i)=>{ if(issueMarkFilters[i]) filterIssueMarks(i, issueMarkFilters[i]); });
 }
 
+let issueMarkFilters = {};
+
 function renderMarkSelector(allMarks, selectedMarks, itemIdx){
-  const available = allMarks.filter(m=>m.status==='ga' || !m.status);
-  if(available.length===0) return '<span class="hint">All marks issued</span>';
-  return `<div class="marks-selector">
-    ${available.map(m=>`
-      <label class="mark-chk">
-        <input type="checkbox" ${selectedMarks.includes(m.mark)?'checked':''} onchange="toggleIssueMark(${itemIdx},'${m.mark}',this.checked)">
-        <span class="mono">${esc(m.mark)}</span>
-        ${m.length?`<span class="hint">${m.length}mm</span>`:''}
-      </label>
-    `).join('')}
+  // Keep original indices so toggling never depends on embedding mark text in JS strings.
+  const availableWithIdx = allMarks.map((m,ai)=>({m, ai})).filter(x=>x.m.status==='ga' || !x.m.status);
+  const issuedElsewhere = allMarks.filter(m=>m.status && m.status!=='ga');
+  const sel = new Set(selectedMarks||[]);
+  const selCount = availableWithIdx.filter(x=>sel.has(x.m.mark)).length;
+  // Imported marks that don't exist in this GA item — the usual reason a freshly imported
+  // row looks "partly selected": those marks can't be ticked because they aren't here.
+  const orphanMarks = (selectedMarks||[]).filter(mk=>!allMarks.some(m=>m.mark===mk));
+  const filterText = issueMarkFilters[itemIdx] || '';
+
+  if(availableWithIdx.length===0){
+    return issuedElsewhere.length
+      ? `<span class="hint">All ${issuedElsewhere.length} mark(s) already issued</span>`
+      : '<span class="hint">—</span>';
+  }
+
+  return `<div class="mark-select-wrap" id="marksel-${itemIdx}">
+    <div class="mark-select-bar">
+      <input type="text" class="mark-filter" placeholder="filter marks…" value="${esc(filterText)}"
+             oninput="filterIssueMarks(${itemIdx}, this.value)">
+      <button type="button" class="btn small" onclick="selectAllIssueMarks(${itemIdx}, true)" title="Select all marks matching the filter">All</button>
+      <button type="button" class="btn small" onclick="selectAllIssueMarks(${itemIdx}, false)" title="Deselect all marks matching the filter">None</button>
+      <span class="hint mono" id="marksel-count-${itemIdx}">${selCount}/${availableWithIdx.length}</span>
+    </div>
+    <div class="marks-selector">
+      ${availableWithIdx.map(({m, ai})=>`
+        <label class="mark-chk" data-mark="${esc(m.mark)}">
+          <input type="checkbox" ${sel.has(m.mark)?'checked':''} onchange="toggleIssueMarkByIdx(${itemIdx},${ai},this.checked)">
+          <span class="mono">${esc(m.mark)}</span>
+          ${(Number(m.qty)||1)>1?`<span class="hint">×${m.qty}</span>`:''}
+          ${m.length?`<span class="hint">${esc(String(m.length))}mm</span>`:''}
+        </label>
+      `).join('')}
+      <div class="hint mark-nomatch" style="display:none;padding:4px 6px;">No marks match that filter.</div>
+    </div>
+    ${issuedElsewhere.length?`<div class="hint" style="margin-top:3px;">${issuedElsewhere.length} mark(s) already issued — not listed here</div>`:''}
+    ${orphanMarks.length?`<div class="hint" style="color:var(--amber);margin-top:3px;" title="${esc(orphanMarks.join(', '))}">⚠ ${orphanMarks.length} imported mark(s) not in this GA item — hover to see</div>`:''}
   </div>`;
+}
+
+function filterIssueMarks(itemIdx, text){
+  issueMarkFilters[itemIdx] = text || '';
+  const wrap = document.getElementById('marksel-'+itemIdx);
+  if(!wrap) return;
+  const t = (text||'').trim().toLowerCase();
+  let shown = 0;
+  wrap.querySelectorAll('.mark-chk').forEach(lb=>{
+    const mk = (lb.dataset.mark||'').toLowerCase();
+    const match = !t || mk.includes(t);
+    lb.style.display = match ? '' : 'none';
+    if(match) shown++;
+  });
+  const none = wrap.querySelector('.mark-nomatch');
+  if(none) none.style.display = shown===0 ? '' : 'none';
+}
+
+// Toggle by index into the GA mark breakdown — avoids quoting problems with odd mark names.
+function toggleIssueMarkByIdx(itemIdx, markIdx, checked){
+  const it = issueEditItems[itemIdx];
+  const ga = it && it.gaItemId ? state.gaItems.find(g=>g.id===it.gaItemId) : null;
+  if(!ga || !ga.markBreakdown) return;
+  const mk = ga.markBreakdown[markIdx];
+  if(!mk) return;
+  toggleIssueMark(itemIdx, mk.mark, checked);
+}
+
+// "All"/"None" act on whatever the filter is currently showing, so you can e.g. filter
+// "R1" then select just that family without disturbing other selections.
+function selectAllIssueMarks(itemIdx, val){
+  const it = issueEditItems[itemIdx];
+  const ga = it && it.gaItemId ? state.gaItems.find(g=>g.id===it.gaItemId) : null;
+  if(!ga || !ga.markBreakdown) return;
+  const filter = (issueMarkFilters[itemIdx]||'').trim().toLowerCase();
+  const targets = ga.markBreakdown
+    .filter(m=>(m.status==='ga' || !m.status))
+    .filter(m=>!filter || String(m.mark).toLowerCase().includes(filter))
+    .map(m=>m.mark);
+  if(!it.markList) it.markList = [];
+  if(val) targets.forEach(mk=>{ if(!it.markList.includes(mk)) it.markList.push(mk); });
+  else it.markList = it.markList.filter(mk=>!targets.includes(mk));
+  syncIssueQtyFromMarks(itemIdx);
+  renderIssueEditItems();
+}
+
+// Qty = sum of the SELECTED marks' quantities (a mark can be ×4), not the number of marks.
+// The old code used markList.length, which silently overwrote an imported quantity the
+// moment you ticked any checkbox.
+function syncIssueQtyFromMarks(itemIdx){
+  const it = issueEditItems[itemIdx];
+  if(!it) return;
+  const ga = it.gaItemId ? state.gaItems.find(g=>g.id===it.gaItemId) : null;
+  let qty = 0;
+  if(ga && ga.markBreakdown && ga.markBreakdown.length){
+    for(const mk of (it.markList||[])){
+      const found = ga.markBreakdown.find(m=>m.mark===mk);
+      qty += found ? (Number(found.qty)||1) : 1;
+    }
+  } else {
+    qty = (it.markList||[]).length;
+  }
+  it.qtyIssued = qty;
+  it.marks = collapseMarksToRanges(it.markList||[]);
 }
 
 function toggleIssueMark(itemIdx, mark, checked){
@@ -2016,8 +2115,7 @@ function toggleIssueMark(itemIdx, mark, checked){
   } else {
     it.markList = it.markList.filter(m=>m!==mark);
   }
-  it.qtyIssued = it.markList.length;
-  it.marks = collapseMarksToRanges(it.markList);
+  syncIssueQtyFromMarks(itemIdx);
   renderIssueEditItems();
 }
 
