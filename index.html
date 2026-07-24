@@ -427,9 +427,15 @@ td input,td select{padding:4px 6px;font-size:12px;background:#161616;}
     <div class="toolbar">
       <h3 style="border:none;margin:0;">Dispatch List</h3>
       <div class="spacer"></div>
+      <label style="font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px;">Source</label>
+      <select id="dispatchSource" style="width:auto;min-width:230px;">
+        <option value="ga">📐 GA Schedule — all marks on drawings</option>
+        <option value="issued">🏭 Issued to Workshop — in fabrication</option>
+        <option value="delivered">🚚 Delivered to Site — already dispatched</option>
+      </select>
       <button class="btn solid" onclick="openDispatchModal()" title="Generate a printable dispatch/loading list of marks to tick as they are loaded and delivered">📋 Generate Dispatch List</button>
     </div>
-    <p class="hint" style="margin-top:-4px;">Produces a printable list of GA marks (one line per mark, grouped by profile/assembly) with tick boxes for loading and delivery confirmation. Filter by profile above to dispatch a specific trade/section.</p>
+    <p class="hint" style="margin-top:-4px;">Produces a printable list of marks (one line per mark, grouped by profile/assembly) with tick boxes for loading and delivery confirmation. Choose <b>GA</b> to dispatch against the full drawing schedule, <b>Issued</b> to load only what the workshop is fabricating, or <b>Delivered</b> to reprint what has already gone out. Filter by profile above to dispatch a specific trade/section.</p>
   </div>
   <div class="card">
     <h3>Upload Handwritten Delivery Note</h3>
@@ -1721,13 +1727,18 @@ function renderIssues(){
   const footer = document.getElementById('issuesTotalFooter');
   
   const filteredRecords = state.workshopIssues.map(iss => {
-    const filteredItems = iss.items.filter(it => itemMatchesFilters(it, 'issue'));
+    // Keep each item's ORIGINAL index alongside it. Row callbacks (relink, delete, mark
+    // edits) index into state.workshopIssues[].items, so passing the filtered position
+    // would target the wrong item whenever a profile/search filter is active.
+    const filteredItems = iss.items
+      .map((it, origIdx) => ({ it, origIdx }))
+      .filter(x => itemMatchesFilters(x.it, 'issue'));
     if(filteredItems.length === 0) return null;
-    return { ...iss, items: filteredItems };
+    return { ...iss, filteredItems };
   }).filter(Boolean);
   
-  const grandTotalQty = filteredRecords.reduce((s,iss)=>s+iss.items.reduce((s2,it)=>s2+(Number(it.qtyIssued)||0),0), 0);
-  const grandTotalCount = filteredRecords.reduce((s,iss)=>s+iss.items.length, 0);
+  const grandTotalQty = filteredRecords.reduce((s,iss)=>s+iss.filteredItems.reduce((s2,x)=>s2+(Number(x.it.qtyIssued)||0),0), 0);
+  const grandTotalCount = filteredRecords.reduce((s,iss)=>s+iss.filteredItems.length, 0);
   if(footer) footer.textContent = filteredRecords.length ? `Total (filtered): ${grandTotalCount} line item(s), ${grandTotalQty} piece(s) issued` : '';
   
   if(filteredRecords.length===0){ 
@@ -1740,36 +1751,198 @@ function renderIssues(){
   }
   empty.style.display='none';
   container.innerHTML = filteredRecords.map(iss=>{
-    const totalQty = iss.items.reduce((s,it)=>s+(Number(it.qtyIssued)||0),0);
+    const totalQty = iss.filteredItems.reduce((s,x)=>s+(Number(x.it.qtyIssued)||0),0);
     return `
     <div class="issue-record">
       <div class="issue-record-header">
         <span class="badge info">${esc(iss.issueRef)}</span>
         <span style="font-weight:600;">${displayDate(iss.issueDate)}</span>
         <span class="hint">Issued by: ${esc(iss.issuedBy||'—')}</span>
-        <span class="pill">${iss.items.length} item(s), ${totalQty} total qty</span>
+        <span class="pill">${iss.filteredItems.length} item(s), ${totalQty} total qty</span>
         <div class="spacer"></div>
-        <button class="btn small danger" onclick="deleteIssueRecord('${iss.id}')">Delete</button>
+        <button class="btn small danger" onclick="deleteIssueRecord('${iss.id}')">Delete Record</button>
       </div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th><th>Marks</th><th>Specific Marks</th><th>Linked GA</th></tr></thead>
+          <thead><tr><th>Description</th><th>Section</th><th>Qty Issued</th><th>Marks</th><th>Linked GA</th><th style="width:60px;"></th></tr></thead>
           <tbody>
-            ${iss.items.map((it,idx)=>{
+            ${iss.filteredItems.map(({it, origIdx})=>{
+              const idx = origIdx;
               const ga = state.gaItems.find(g=>g.id===it.gaItemId);
-              const specificMarks = it.markList && it.markList.length > 0 ? it.markList.map(m=>`<span class="pill mono" style="font-size:10px;">${esc(m)}</span>`).join(' ') : '<span class="hint">—</span>';
-              return `<tr><td>${esc(it.description)}</td><td class="mono">${esc(it.section)}</td><td>${it.qtyIssued}</td><td class="mono">${esc(it.marks||'—')}</td><td>${specificMarks}</td><td>
-                <select onchange="relinkIssueItem('${iss.id}',${idx},this.value)" style="${ga?'':'color:var(--amber);'}">
-                  <option value="">-- unlinked --</option>
-                  ${state.gaItems.map(g=>`<option value="${g.id}" ${it.gaItemId===g.id?'selected':''}>${esc(g.description)} ${esc(g.section)} (GA:${g.gaQty})</option>`).join('')}
-                </select>
-              </td></tr>`;
+              const bd = issueItemBreakdown(it);
+              const key = iss.id+'__'+idx;
+              const markSummary = bd.length
+                ? `<div class="mark-summary"><span class="count">${bd.length} marks</span></div>`
+                : '';
+              const expandBtn = bd.length
+                ? `<button class="expand-btn" id="expand-${key}" onclick="toggleIssueMarkBreakdown('${key}')" title="Show individual marks">▶</button>`
+                : '<span style="display:inline-block;width:22px;"></span>';
+              return `<tr>
+                <td>${esc(it.description)}${it.importDate?`<div style="margin-top:2px;"><span class="badge neutral" title="Issue batch date">${displayDate(it.importDate)}</span></div>`:''}</td>
+                <td class="mono">${esc(it.section)}</td>
+                <td style="font-weight:700;">${it.qtyIssued}</td>
+                <td class="mono">${esc(it.marks||'—')}${markSummary}</td>
+                <td>
+                  <select onchange="relinkIssueItem('${iss.id}',${idx},this.value)" style="${ga?'':'color:var(--amber);'}">
+                    <option value="">-- unlinked --</option>
+                    ${state.gaItems.map(g=>`<option value="${g.id}" ${it.gaItemId===g.id?'selected':''}>${esc(g.description)} ${esc(g.section)} (GA:${g.gaQty})</option>`).join('')}
+                  </select>
+                </td>
+                <td style="white-space:nowrap;">${expandBtn}<button class="icon-btn" onclick="deleteIssueLineItem('${iss.id}',${idx})" title="Remove this profile from the issue record">✕</button></td>
+              </tr>
+              ${renderIssueMarkBreakdownRow(iss, it, idx)}`;
             }).join('')}
           </tbody>
         </table>
       </div>
     </div>`;
   }).join('');
+}
+
+/* ---- Issued-item mark breakdown (mirrors the GA tab presentation) ---- */
+// Older issue records may only carry a collapsed marks string or a flat markList.
+// Normalize to the same {mark, qty, length, material, weight, status} shape GA uses so
+// both tabs present and select marks identically.
+function issueItemBreakdown(it){
+  if(it.markBreakdown && it.markBreakdown.length) return it.markBreakdown;
+  const list = (it.markList && it.markList.length) ? it.markList : expandMarkRanges(it.marks||'');
+  return list.filter(Boolean).map(mk=>({ mark:mk, qty:1, length:null, material:'', weight:null, status:'issued' }));
+}
+function ensureIssueBreakdown(it){
+  if(!it.markBreakdown || !it.markBreakdown.length) it.markBreakdown = issueItemBreakdown(it);
+  return it.markBreakdown;
+}
+
+function renderIssueMarkBreakdownRow(iss, it, idx){
+  const bd = issueItemBreakdown(it);
+  if(bd.length === 0) return '';
+  const key = iss.id+'__'+idx;
+  const rows = bd.map((m,mi)=>`
+    <tr>
+      <td style="text-align:center;"><input type="checkbox" class="imark-cb-${key}" data-idx="${mi}" onchange="updateIssueMarkSelectionCount('${key}')"></td>
+      <td class="mono" style="color:var(--muted2);">${mi+1}</td>
+      <td class="mono" style="font-weight:600;color:var(--gold);">${esc(m.mark)}</td>
+      <td>${m.qty||1}</td>
+      <td class="mono">${m.length?esc(String(m.length))+' mm':'—'}</td>
+      <td class="mono">${esc(m.material||'—')}</td>
+      <td class="mono">${m.weight?esc(String(m.weight))+' kg':'—'}</td>
+      <td><span class="mark-badge ${m.status||'issued'}">${m.status==='delivered'?'Delivered':m.status==='ga'?'In GA':'Issued'}</span></td>
+      <td><button class="icon-btn" onclick="removeMarkFromIssue('${iss.id}',${idx},${mi})" title="Remove this mark from the issue">✕</button></td>
+    </tr>
+  `).join('');
+  return `
+    <tr class="mark-breakdown-row" id="mark-row-${key}">
+      <td colspan="6" class="mark-breakdown-cell">
+        <div class="mark-breakdown-inner">
+          <div class="mark-bulk-bar">
+            <label style="display:flex;align-items:center;gap:5px;cursor:pointer;font-size:11px;">
+              <input type="checkbox" id="imark-selall-${key}" onchange="setAllIssueMarks('${key}',this.checked)"> Select all
+            </label>
+            <button class="btn small" onclick="setAllIssueMarks('${key}',false)">Clear</button>
+            <span class="hint" id="imark-selcount-${key}" style="margin-left:2px;">0 selected</span>
+            <div class="spacer" style="flex:1;"></div>
+            <button class="btn small danger" onclick="removeSelectedIssueMarks('${iss.id}',${idx})" title="Delete all ticked marks from this issue">🗑 Delete selected</button>
+          </div>
+          <table class="mark-table">
+            <thead><tr><th style="width:26px;"></th><th style="width:30px;">#</th><th>Mark</th><th>Qty</th><th>Length</th><th>Material</th><th>Weight</th><th>Status</th><th style="width:26px;"></th></tr></thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+      </td>
+    </tr>
+  `;
+}
+
+// Delete a single profile/line item from an issue record. Its marks are released back to
+// "In GA" so the GA tab and clash check stay truthful about what is actually out.
+function deleteIssueLineItem(issueId, itemIdx){
+  const iss = state.workshopIssues.find(x=>x.id===issueId);
+  if(!iss) return;
+  const it = iss.items[itemIdx];
+  if(!it) return;
+  const bd = issueItemBreakdown(it);
+  const label = `${it.description||'(no description)'}${it.section?' · '+it.section:''}`;
+  if(!confirm(`Remove "${label}" (qty ${it.qtyIssued||0}${bd.length?`, ${bd.length} mark(s)`:''}) from issue record ${iss.issueRef}?\n\nIts marks return to "In GA".`)) return;
+  bd.forEach(m=>releaseGaMark(it.gaItemId, m.mark));
+  iss.items.splice(itemIdx, 1);
+  let recordRemoved = false;
+  if(iss.items.length === 0){
+    state.workshopIssues = state.workshopIssues.filter(x=>x.id!==issueId);
+    recordRemoved = true;
+  }
+  saveLocal(); renderAll(); autoFlagClashesForNewData();
+  toast(recordRemoved
+    ? `Removed the last item — issue record ${iss.issueRef} deleted.`
+    : `Removed "${label}" from ${iss.issueRef}.`);
+}
+
+function toggleIssueMarkBreakdown(key){
+  const row = document.getElementById('mark-row-'+key);
+  const btn = document.getElementById('expand-'+key);
+  if(!row || !btn) return;
+  row.classList.toggle('show');
+  btn.classList.toggle('expanded');
+}
+function issueMarkCheckboxes(key){ return Array.from(document.querySelectorAll('.imark-cb-'+key)); }
+function selectedIssueMarkIndices(key){ return issueMarkCheckboxes(key).filter(cb=>cb.checked).map(cb=>Number(cb.dataset.idx)); }
+function updateIssueMarkSelectionCount(key){
+  const n = selectedIssueMarkIndices(key).length;
+  const el = document.getElementById('imark-selcount-'+key);
+  if(el) el.textContent = `${n} selected`;
+  const total = issueMarkCheckboxes(key).length;
+  const selAll = document.getElementById('imark-selall-'+key);
+  if(selAll){ selAll.checked = n>0 && n===total; selAll.indeterminate = n>0 && n<total; }
+}
+function setAllIssueMarks(key, val){
+  issueMarkCheckboxes(key).forEach(cb=>cb.checked=val);
+  updateIssueMarkSelectionCount(key);
+}
+
+// Removing an issued mark also releases it back to "In GA" on the linked GA item, so the
+// GA tab and clash check stay truthful about what is actually out at the workshop.
+function releaseGaMark(gaItemId, mark){
+  const ga = state.gaItems.find(g=>g.id===gaItemId);
+  if(!ga || !ga.markBreakdown) return;
+  const gm = ga.markBreakdown.find(m=>m.mark===mark);
+  if(gm && gm.status==='issued') gm.status='ga';
+}
+
+function removeMarkFromIssue(issueId, itemIdx, markIdx){
+  const iss = state.workshopIssues.find(x=>x.id===issueId);
+  if(!iss) return;
+  const it = iss.items[itemIdx];
+  if(!it) return;
+  const bd = ensureIssueBreakdown(it);
+  const removed = bd.splice(markIdx,1)[0];
+  if(!removed) return;
+  it.qtyIssued = Math.max(0, (Number(it.qtyIssued)||0) - (Number(removed.qty)||1));
+  it.markList = bd.map(m=>m.mark);
+  it.marks = collapseMarksToRanges(it.markList);
+  releaseGaMark(it.gaItemId, removed.mark);
+  saveLocal(); renderAll(); autoFlagClashesForNewData();
+}
+
+function removeSelectedIssueMarks(issueId, itemIdx){
+  const iss = state.workshopIssues.find(x=>x.id===issueId);
+  if(!iss) return;
+  const it = iss.items[itemIdx];
+  if(!it) return;
+  const key = issueId+'__'+itemIdx;
+  const idxs = selectedIssueMarkIndices(key);
+  if(idxs.length===0){ toast('No marks selected.'); return; }
+  if(!confirm(`Remove ${idxs.length} selected mark(s) from this issue record? The quantity issued is reduced accordingly and the marks return to "In GA".`)) return;
+  const bd = ensureIssueBreakdown(it);
+  const removedQty = idxs.reduce((s,i)=>s+(Number(bd[i]?.qty)||1),0);
+  const removedMarks = idxs.map(i=>bd[i]?.mark).filter(Boolean);
+  idxs.sort((a,b)=>b-a).forEach(i=>bd.splice(i,1));
+  it.qtyIssued = Math.max(0, (Number(it.qtyIssued)||0) - removedQty);
+  it.markList = bd.map(m=>m.mark);
+  it.marks = collapseMarksToRanges(it.markList);
+  removedMarks.forEach(mk=>releaseGaMark(it.gaItemId, mk));
+  saveLocal(); renderAll(); autoFlagClashesForNewData();
+  toast(`Removed ${idxs.length} mark(s) from the issue record.`);
+  const row = document.getElementById('mark-row-'+key);
+  if(row){ row.classList.add('show'); const btn=document.getElementById('expand-'+key); if(btn) btn.classList.add('expanded'); }
 }
 
 function openIssueModal(){
@@ -4078,68 +4251,116 @@ function renderClashMarkStatus(markStatus){
    One line per GA mark, grouped by profile/assembly (per Dennis's workflow). Respects the
    active profile/search filter so a single trade can be dispatched. Marks already delivered
    are shown pre-ticked so the list doubles as an outstanding-dispatch sheet. */
-function buildDispatchGroups(){
-  const groups = new Map(); // profile/description -> [{mark, qty, status, length, weight}]
-  state.gaItems.forEach(ga => {
-    if(!itemMatchesFilters(ga, 'ga')) return;
-    const key = ga.description + (ga.section ? ' · ' + ga.section : '');
-    if(ga.markBreakdown && ga.markBreakdown.length){
-      ga.markBreakdown.forEach(mb => {
-        if(!groups.has(key)) groups.set(key, { label:key, isPlatePool: !!ga.isPlatePool, marks:[] });
-        groups.get(key).marks.push({ mark: mb.mark, qty: mb.qty||1, status: mb.status||'ga', length: mb.length||null, weight: mb.weight||null });
+const DISPATCH_SOURCE_LABELS = {
+  ga: 'GA Schedule (everything on the drawings)',
+  issued: 'Issued to Workshop (fabrication in progress)',
+  delivered: 'Delivered to Site (already dispatched)'
+};
+
+// Build the dispatch groups from whichever stage the user picks. GA answers "what exists",
+// issued answers "what the workshop is making", delivered answers "what already went out".
+function buildDispatchGroups(source='ga'){
+  const groups = new Map();
+  const push = (key, meta, mark) => {
+    if(!groups.has(key)) groups.set(key, { label:key, isPlatePool: !!meta.isPlatePool, marks:[] });
+    groups.get(key).marks.push(mark);
+  };
+
+  if(source === 'ga'){
+    state.gaItems.forEach(ga => {
+      if(!itemMatchesFilters(ga, 'ga')) return;
+      const key = ga.description + (ga.section ? ' · ' + ga.section : '');
+      if(ga.markBreakdown && ga.markBreakdown.length){
+        ga.markBreakdown.forEach(mb => push(key, ga, { mark: mb.mark, qty: mb.qty||1, status: mb.status||'ga', length: mb.length||null, weight: mb.weight||null }));
+      } else if(ga.marks){
+        expandMarkRanges(ga.marks).forEach(mk => push(key, ga, { mark: mk, qty:1, status:'ga', length:null, weight:null }));
+      }
+    });
+  } else if(source === 'issued'){
+    state.workshopIssues.forEach(iss => {
+      iss.items.forEach(it => {
+        if(!itemMatchesFilters(it, 'issue')) return;
+        const key = it.description + (it.section ? ' · ' + it.section : '');
+        const bd = issueItemBreakdown(it);
+        if(bd.length){
+          bd.forEach(mb => push(key, it, { mark: mb.mark, qty: mb.qty||1, status: mb.status||'issued', length: mb.length||null, weight: mb.weight||null, ref: iss.issueRef }));
+        } else if((Number(it.qtyIssued)||0) > 0){
+          push(key, it, { mark: '(no mark)', qty: Number(it.qtyIssued)||0, status:'issued', length:null, weight:null, ref: iss.issueRef });
+        }
       });
-    } else if(ga.marks){
-      // expand a collapsed mark string (e.g. "A1-A12") into individual marks
-      const expanded = expandMarkRanges(ga.marks);
-      if(!groups.has(key)) groups.set(key, { label:key, isPlatePool:!!ga.isPlatePool, marks:[] });
-      expanded.forEach(mk => groups.get(key).marks.push({ mark: mk, qty:1, status:'ga', length:null, weight:null }));
-    }
-  });
+    });
+  } else if(source === 'delivered'){
+    state.deliveryNotes.forEach(dn => {
+      dn.items.forEach(it => {
+        if(!itemMatchesFilters(it, 'delivery')) return;
+        const ga = state.gaItems.find(g=>g.id===it.gaItemId);
+        const sect = it.section || (ga ? ga.section : '');
+        const key = it.description + (sect ? ' · ' + sect : '');
+        const list = (it.markList && it.markList.length) ? it.markList : expandMarkRanges(it.marks||'');
+        if(list.length){
+          list.forEach(mk => push(key, it, { mark: mk, qty:1, status:'delivered', length:null, weight:null, ref: displayDate(dn.deliveryDate) }));
+        } else if((Number(it.qtyDelivered)||0) > 0){
+          push(key, it, { mark: '(no mark)', qty: Number(it.qtyDelivered)||0, status:'delivered', length:null, weight:null, ref: displayDate(dn.deliveryDate) });
+        }
+      });
+    });
+  }
   return Array.from(groups.values());
 }
 
 function openDispatchModal(){
-  const groups = buildDispatchGroups();
+  const sel = document.getElementById('dispatchSource');
+  const source = sel ? sel.value : 'ga';
+  const groups = buildDispatchGroups(source);
   const totalMarks = groups.reduce((s,g)=>s+g.marks.length,0);
-  if(totalMarks === 0){ toast('No marks to dispatch — import a part list with marks into GA first (or clear the profile filter).'); return; }
-  printDispatchList(groups);
+  if(totalMarks === 0){
+    const where = source==='ga' ? 'the GA schedule' : source==='issued' ? 'the issue records' : 'the delivery notes';
+    toast(`No marks to dispatch from ${where} — check that marks exist there, or clear the profile filter.`);
+    return;
+  }
+  printDispatchList(groups, source);
 }
 
-function printDispatchList(groups){
+function printDispatchList(groups, source='ga'){
   const p = state.project || {};
   const filterNote = (activeFilters.sections.length || activeFilters.search)
     ? `Filtered: ${[activeFilters.sections.join(', '), activeFilters.search?('"'+activeFilters.search+'"'):''].filter(Boolean).join(' · ')}` : 'All profiles';
-  let body = `<h2>Dispatch / Loading List</h2>
-    <p style="font-size:11px;color:#555;margin:2px 0 10px;">${esc(filterNote)} — tick each mark as it is loaded and again on delivery. Marks already recorded as delivered are pre-ticked.</p>`;
+  const showRef = source !== 'ga';
+  const refHeader = source === 'issued' ? 'Issue Ref' : 'Delivered';
   let grand = 0, grandDelivered = 0;
+  let tables = '';
   for(const g of groups){
     const delivered = g.marks.filter(m=>m.status==='delivered').length;
     grand += g.marks.length; grandDelivered += delivered;
-    body += `<h2 style="font-size:12px;">${esc(g.label)}${g.isPlatePool?' — POOLED PLATES':''} <span style="font-weight:400;color:#777;">(${g.marks.length} mark${g.marks.length!==1?'s':''})</span></h2>
+    tables += `<h2 style="font-size:12px;">${esc(g.label)}${g.isPlatePool?' — POOLED PLATES':''} <span style="font-weight:400;color:#777;">(${g.marks.length} mark${g.marks.length!==1?'s':''})</span></h2>
       <table><thead><tr>
         <th style="width:34px;">Loaded</th><th style="width:34px;">Del.</th>
-        <th>Mark</th><th style="width:50px;">Qty</th><th style="width:70px;">Length</th><th style="width:70px;">Weight</th><th>Remarks</th>
+        <th>Mark</th><th style="width:50px;">Qty</th><th style="width:70px;">Length</th><th style="width:70px;">Weight</th>${showRef?`<th style="width:80px;">${refHeader}</th>`:''}<th>Remarks</th>
       </tr></thead><tbody>`;
     for(const m of g.marks){
       const tick = m.status==='delivered' ? '☑' : '☐';
-      body += `<tr>
+      tables += `<tr>
         <td style="text-align:center;font-size:15px;">☐</td>
         <td style="text-align:center;font-size:15px;">${tick}</td>
         <td style="font-weight:700;">${esc(m.mark)}</td>
         <td style="text-align:center;">${m.qty||1}</td>
         <td style="text-align:center;">${m.length?esc(String(m.length))+'mm':'—'}</td>
         <td style="text-align:center;">${m.weight?esc(String(m.weight))+'kg':'—'}</td>
+        ${showRef?`<td style="text-align:center;font-size:10px;">${esc(m.ref||'—')}</td>`:''}
         <td></td>
       </tr>`;
     }
-    body += '</tbody></table>';
+    tables += '</tbody></table>';
   }
-  body = `<h2>Dispatch / Loading List</h2>
-    <p style="font-size:11px;color:#555;margin:2px 0 10px;">${esc(filterNote)} — ${grand} mark(s) total, ${grandDelivered} already delivered, ${grand-grandDelivered} outstanding. Tick each mark as loaded and again on delivery.</p>`
-    + body.substring(body.indexOf('</p>')+4);
+  const outstanding = grand - grandDelivered;
+  const body = `<h2>Dispatch / Loading List</h2>
+    <p style="font-size:11px;color:#555;margin:2px 0 10px;">
+      <b>Source: ${esc(DISPATCH_SOURCE_LABELS[source]||source)}</b><br>
+      ${esc(filterNote)} — ${grand} mark(s) total${source!=='delivered'?`, ${grandDelivered} already delivered, ${outstanding} outstanding`:''}.
+      Tick each mark as it is loaded and again on delivery.${source!=='delivered'?' Marks already recorded as delivered are pre-ticked.':''}
+    </p>` + tables;
 
-  const html = buildStandalonePrintDoc(`${esc(p.name||'Project')} — Dispatch List`, body);
-  openPrintPreviewWith(html);
+  openPrintPreviewWith(buildStandalonePrintDoc(`${esc(p.name||'Project')} — Dispatch List`, body));
 }
 
 /* ============================================================
